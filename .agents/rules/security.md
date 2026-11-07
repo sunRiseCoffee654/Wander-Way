@@ -1,0 +1,12 @@
+# Security Rules
+- Least privilege; deny by default.
+- Enforce authorization in backend services and database RLS.
+- Never expose service-role keys or provider secrets in app bundles.
+- Validate external input at API boundaries with schemas.
+- Use secure token storage and safe OAuth/deep-link handling.
+- Protect uploads with size/type limits, private buckets and scoped access.
+- Never log tokens or sensitive identity/travel data.
+- Rate-limit authentication, AI and provider-backed endpoints.
+- Use parameterized SQL.
+- Review dependency vulnerabilities and secrets before merge.
+- Production migrations/deployments/destructive operations require human approval.

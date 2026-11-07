@@ -1,0 +1,11 @@
+# Testing Rules
+- Add tests for new business rules and bug fixes.
+- Unit-test deterministic calculations and state transitions.
+- Integration-test APIs, persistence, provider adapters and transactions.
+- Test RLS/storage policies for every role and cross-user isolation.
+- Test offline queue replay, retries, duplicate submissions and conflict resolution.
+- Include loading, empty, error, stale, unauthorized and partial-data states.
+- Run formatter, lint, typecheck and relevant tests before completion.
+- Report exact commands and actual outcomes.
+- Never silently skip flaky tests or weaken assertions.
+- Money, auth, privacy and safety logic require negative-path tests.
