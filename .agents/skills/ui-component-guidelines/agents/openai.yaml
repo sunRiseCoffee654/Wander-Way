@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Component Guidelines"
+  short_description: "Specify robust, accessible UI components"
+  default_prompt: "Use $ui-component-guidelines to help with my web interface task."
+

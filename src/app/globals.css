@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+/*
+ * WanderWay Material 3 Travel Companion (Google Stitch UI Kit)
+ * Semantic tokens & tonal surfaces
+ */
+@theme inline {
+  /* Material 3 Color Tokens */
+  --color-background: #f9f9ff;
+  --color-surface: #f9f9ff;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-dim: #d7dae3;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f1f3fc;
+  --color-surface-container: #ebedf7;
+  --color-surface-container-high: #e6e8f1;
+  --color-surface-container-highest: #e0e2eb;
+  --color-surface-variant: #e0e2eb;
+  --color-on-surface: #181c22;
+  --color-on-surface-variant: #40484f;
+  --color-outline: #707880;
+  --color-outline-variant: #c0c7d0;
+  --color-inverse-surface: #2d3037;
+  --color-inverse-on-surface: #eef0fa;
+  --color-surface-tint: #006494;
+
+  --color-primary: #004b71;
+  --color-primary-container: #006494;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #b6ddff;
+  --color-primary-fixed: #cbe6ff;
+  --color-primary-fixed-dim: #8ecdff;
+  --color-on-primary-fixed: #001e30;
+  --color-on-primary-fixed-variant: #004b71;
+  --color-inverse-primary: #8ecdff;
+
+  --color-secondary: #9c4330;
+  --color-secondary-container: #fe8f77;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #762716;
+  --color-secondary-fixed: #ffdad3;
+  --color-secondary-fixed-dim: #ffb4a4;
+  --color-on-secondary-fixed: #3e0500;
+  --color-on-secondary-fixed-variant: #7d2c1b;
+
+  --color-tertiary: #25502c;
+  --color-tertiary-container: #3d6842;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #b4e5b5;
+  --color-tertiary-fixed: #beefbe;
+  --color-tertiary-fixed-dim: #a3d2a4;
+  --color-on-tertiary-fixed: #002108;
+  --color-on-tertiary-fixed-variant: #254f2c;
+
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+
+  /* Spacing Tokens */
+  --spacing-gutter: 1.5rem;
+  --spacing-margin: 1.5rem;
+  --spacing-gutter-mobile: 1rem;
+  --spacing-margin-mobile: 1rem;
+  --spacing-margin-desktop: 2rem;
+
+  /* Typography: Roboto Flex */
+  --font-sans: var(--font-roboto-flex), "Roboto Flex", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-roboto-flex), "Roboto Flex", Georgia, serif;
+  --font-display-lg: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-display-md: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-headline-lg: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-headline-md: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-headline-sm: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-title-lg: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-title-md: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-title-sm: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-body-lg: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-body-md: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-body-sm: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-label-lg: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-label-md: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+  --font-label-sm: var(--font-roboto-flex), "Roboto Flex", sans-serif;
+
+  /* Backwards compatibility semantic tokens */
+  --color-canvas: #f9f9ff;
+  --color-surface-elevated: #ebedf7;
+  --color-text-primary: #181c22;
+  --color-text-secondary: #40484f;
+  --color-text-muted: #707880;
+  --color-primary-hover: #006494;
+  --color-primary-active: #004b71;
+  --color-border-subtle: #e0e2eb;
+  --color-control-border: #c0c7d0;
+  --color-focus: #004b71;
+  --color-selected-bg: #cbe6ff;
+  --color-on-selected: #001e30;
+  --color-accent: #9c4330;
+  --color-accent-hover: #762716;
+  --color-accent-active: #3e0500;
+  --color-on-accent: #ffffff;
+  --color-disabled-bg: #ebedf7;
+  --color-disabled-text: #707880;
+  --color-success-fg: #25502c;
+  --color-success-bg: #beefbe;
+  --color-warning-fg: #9c4330;
+  --color-warning-bg: #ffdad3;
+  --color-error-fg: #ba1a1a;
+  --color-error-bg: #ffdad6;
+  --color-info-fg: #004b71;
+  --color-info-bg: #cbe6ff;
+
+  --container-prose: 65ch;
+  --container-form: 48rem;
+  --container-public: 80rem;
+  --container-app: 100rem;
+
+  --radius-control: 8px;
+  --radius-panel: 16px;
+  --radius-editorial: 24px;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root {
+  color-scheme: light;
+  --font-roboto-flex: "Roboto Flex", sans-serif;
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+  }
+
+  body {
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.25px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior: none;
+  }
+
+  /* Material Symbols icon sizing defaults */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    scrollbar-width: none;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-fixed);
+    color: var(--color-on-primary-fixed);
+  }
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 500;
+  transform: translateY(-200%);
+  border-radius: var(--radius-control);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: transform 160ms var(--ease-standard);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}

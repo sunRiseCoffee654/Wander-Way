@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Design Research"
+  short_description: "Turn product research into design direction"
+  default_prompt: "Use $ui-design-research to help with my web interface task."
+

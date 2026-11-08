@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Color Systems"
+  short_description: "Build and verify accessible color themes"
+  default_prompt: "Use $ui-color-systems to help with my web interface task."
+

@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Quality Review"
+  short_description: "Audit rendered UI with evidence and scope"
+  default_prompt: "Use $ui-quality-checklist to help with my web interface task."
+

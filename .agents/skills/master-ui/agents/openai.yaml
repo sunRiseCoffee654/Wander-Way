@@ -1,0 +1,5 @@
+interface:
+  display_name: "Master UI Design"
+  short_description: "Design cohesive, verified web interfaces"
+  default_prompt: "Use $master-ui to help with my web interface task."
+

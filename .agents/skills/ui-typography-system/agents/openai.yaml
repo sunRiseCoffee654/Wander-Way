@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Typography System"
+  short_description: "Create readable responsive web typography"
+  default_prompt: "Use $ui-typography-system to help with my web interface task."
+

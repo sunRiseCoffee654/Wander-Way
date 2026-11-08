@@ -1,7 +1,7 @@
 # WanderWay v3.0 — Comprehensive Architectural Implementation Plan
 
 **Product:** WanderWay v3.0 (Web Application)  
-**Core Stack:** Next.js 15 (App Router, React 19, TypeScript, Tailwind CSS), Supabase (PostgreSQL, PostGIS, RLS, Auth, Storage), Google Gemini API (`@google/genai`), Geoapify API.  
+**Core Stack:** Next.js 16 (App Router, React 19, TypeScript, Tailwind CSS), Supabase (PostgreSQL, PostGIS, RLS, Auth, Storage), Google Gemini API (`@google/genai`), Geoapify API.  
 **PRD Reference:** PRD v3.0 Compliance (Traceable Evidence, Grounded AI, Deterministic Budgeting, User Control).
 
 ---
@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart TD
-    subgraph Client ["Client Layer (Next.js 15 Web App)"]
+    subgraph Client ["Client Layer (Next.js 16 Web App)"]
         UI["Responsive UI (Tailwind CSS + Lucide Icons)"]
         RSC["React Server Components (SSR / SEO)"]
         ClientIsland["Client Components (Interactive Map, Drag-Drop Itinerary, Chat)"]
@@ -276,7 +276,7 @@ sequenceDiagram
 
 ---
 
-## 5. Next.js 15 Application Directory Structure
+## 5. Next.js 16 Application Directory Structure
 
 ```
 d:\Projects\WanderWay\
@@ -288,7 +288,7 @@ d:\Projects\WanderWay\
 │   │   └── 20261106_003_postgis_helpers.sql
 │   └── seed.sql
 ├── src/
-│   ├── app/                    # Next.js 15 App Router
+│   ├── app/                    # Next.js 16 App Router
 │   │   ├── (marketing)/        # Landing page, public destination discovery
 │   │   │   ├── page.tsx
 │   │   │   └── explore/
@@ -355,7 +355,7 @@ flowchart LR
 ```
 
 ### Phase 1: Foundation & Scaffolding
-- Initialize Next.js 15 App Router with TypeScript (strict), Tailwind CSS v4, Lucide React.
+- Initialize Next.js 16 App Router with TypeScript (strict), Tailwind CSS v4, Lucide React.
 - Configure path aliases (`@/*`), ESLint, and deterministic testing harness (Vitest).
 - Establish design system tokens (colors, typography, minimal motion standards).
 
@@ -400,6 +400,6 @@ flowchart LR
 ## 7. Immediate Next Action
 
 Once you approve this Implementation Plan:
-1. We run **Phase 1**: Initialize the clean Next.js 15 project in the repository.
+1. We run **Phase 1**: Initialize the clean Next.js 16 project in the repository.
 2. We run **Phase 2**: Apply the Supabase SQL migration via direct connection to set up all tables and RLS policies.
 

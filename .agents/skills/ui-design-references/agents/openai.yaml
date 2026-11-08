@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Design References"
+  short_description: "Find and apply credible design references"
+  default_prompt: "Use $ui-design-references to help with my web interface task."
+

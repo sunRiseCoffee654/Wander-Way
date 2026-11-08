@@ -1,9 +1,9 @@
 # WanderWay v3.0 — Project Status & Foundation Log
 
 **Last Updated:** November 2026  
-**Status:** Architecture Defined & Workspace Prepared (Ready for Phase 1 Scaffolding)  
+**Status:** Phase 5 Complete — Grounded AI Plan Generation & Google Stitch Material 3 Travel Companion UI Kit Replatformed  
 **Target Platform:** Web Application (Responsive: Mobile viewport to Desktop)  
-**Primary Stack:** Next.js 15 (App Router, React 19, TypeScript), Supabase (PostgreSQL, PostGIS, RLS, Auth, Storage), Google Gemini API (`@google/genai`), Geoapify API.
+**Primary Stack:** Next.js 16 (App Router, React 19, TypeScript), Supabase (PostgreSQL, PostGIS, RLS, Auth, Storage), Google Gemini API (`@google/genai`), Geoapify API.
 
 ---
 
@@ -32,7 +32,7 @@ Created the root [`AGENTS.md`](./AGENTS.md) operating contract parsed automatica
 ### C. Specialized Agent Team Structure
 Configured the multi-agent roster in `.agents/agents/` and rules in `.agents/rules/`:
 1. **Lead Engineer (`lead-engineer.md`):** Coordinates task sequencing, architecture preservation, and release readiness.
-2. **Web Engineer (`web-engineer.md`):** Owns Next.js 15 App Router architecture, responsive UI layout, accessibility (WCAG AA), and browser performance.
+2. **Web Engineer (`web-engineer.md`):** Owns Next.js 16 App Router architecture, responsive UI layout, accessibility (WCAG AA), and browser performance.
 3. **Database & Security Engineer (`database-security.md`):** Owns PostgreSQL schema, PostGIS spatial queries, and zero-trust Supabase RLS policies.
 4. **Budget Intelligence Engineer (`budget-intelligence.md`):** Enforces traceable price evidence, currency conversions, and split calculations.
 5. **Product Logic Auditor (`product-logic-auditor.md`):** Validates trip lifecycles, state machine transitions, and edge cases.
@@ -57,7 +57,7 @@ Authored, approved, and synchronized the comprehensive architectural plan in [`I
 - **Entity-Relationship Model:** Documented relational PostgreSQL schema for `profiles`, `trips`, `trip_members`, `itinerary_days`, `itinerary_activities`, `budget_line_items`, `bookings`, `packing_items`, and `documents`.
 - **Row Level Security (RLS) Matrix:** Established tenant-isolated default-deny security policies across all tables.
 - **Two-Tier AI Grounding Pipeline:** Mapped out the workflow connecting Gemini 2.5 structured prompts with Geoapify place resolution.
-- **Directory Blueprint:** Outlined the Next.js 15 App Router folder structure (`src/app/`, `src/components/`, `src/lib/`, `tests/`).
+- **Directory Blueprint:** Outlined the Next.js 16 App Router folder structure (`src/app/`, `src/components/`, `src/lib/`, `tests/`).
 - **Phased Execution Roadmap:** Detailed milestones across 8 clear phases from Next.js foundation through to verified production release.
 
 ---
@@ -74,18 +74,128 @@ WanderWay/
 ├── .env.example             # Sanitized credentials template
 ├── .gitignore               # Clean git ignore rules
 ├── AGENTS.md                # Primary Antigravity project operating contract
+├── DESIGN.md                # Field Atlas visual contract and tokens
 ├── IMPLEMENTATION_PLAN.md   # Core synchronized v3.0 architecture & roadmap
-├── PROJECT_STATUS.md        # This foundation log
-├── README.md                # Repository overview
-└── WanderWay-PRD.md         # v3.0 Product Requirements Document
+├── PROJECT_STATUS.md        # This delivery log
+├── README.md                # Repository overview and commands
+├── UI_UX_PLAN.md            # Journeys, wireframes, state machines and tasks
+├── WanderWay-PRD.md         # v3.0 Product Requirements Document
+├── eslint.config.mjs        # Project lint rules
+├── next.config.ts           # Next.js configuration
+├── package.json             # Executable scripts and dependencies
+├── postcss.config.mjs       # Tailwind CSS v4 PostCSS bridge
+├── src/
+│   ├── app/                 # Root layout, design tokens and foundation preview
+│   └── lib/                 # Shared client utilities
+├── tests/unit/              # Runnable Vitest unit tests
+├── tsconfig.json            # Strict TypeScript and @/* alias
+└── vitest.config.ts         # Unit test harness
 ```
 
 ---
 
-## 3. Next Immediate Step: Phase 1 Scaffolding
+## 3. Progress Summary (Phases 1 to 5)
 
-With the foundation and rules locked in, the immediate execution step is:
-1. Initialize the **Next.js 15 App Router** project in the workspace (`TypeScript`, `Tailwind CSS v4`, `Lucide React`).
-2. Set up core path aliases (`@/*`), strict TypeScript configuration, and testing harness (Vitest).
-3. Establish design tokens and responsive base application layout.
+### Phase 1: Foundation & Scaffolding
+- Next.js 16.4 App Router, React 19, strict TypeScript.
+- Tailwind CSS v4 styling with Field Atlas design tokens (`DESIGN.md`).
+- Vitest testing framework and ESLint flat config.
+
+### Phase 2: Database Schemas, PostGIS & RLS
+- Applied PostgreSQL migrations on Supabase for `profiles`, `trips`, `trip_members`, `itinerary_days`, `itinerary_activities`, `budget_line_items`, `trip_proposals`, and lookup tables.
+- PostGIS spatial support enabled with spatial point columns.
+- Comprehensive default-deny Row Level Security (RLS) policies protecting user data.
+
+### Phase 3: Auth & Profiles
+- Supabase Auth integration supporting Magic Link and OAuth.
+- Profile management with currency, travel pace, and home location preferences.
+- Server/Client auth helpers and middleware session refresh.
+
+### Phase 4: Destination Exploration & Geoapify Integration
+- Curated destinations with rich photography and tags.
+- Secure server action proxy (`autocompletePlaces`) with Geoapify places API.
+- Interactive explore directory with search and filtering.
+
+### Phase 5: Grounded AI Plan Generation & Proposal Review
+- **Grounded AI Engine**: Structured plan drafting via Google Gemini (`@google/genai`) without hallucinating coordinates or prices.
+- **Geoapify Grounding**: Strict match tiers (`matched_high`, `matched_low`, `unresolved`), haversine distance filtering (≤50km), and adjacent leg transit calculations.
+- **Atomic Proposal Apply**: PostgreSQL RPC `apply_trip_proposal` with `booking_hint` coalesce, formatted address, match tier, and notes preservation.
+- **Trip Wizard (`/trips/new`)**: 4-step progressive disclosure wizard with zero-CLS initial state hydration, tactile steppers, and debounced draft persistence.
+- **Full Remediation**: Resolved all 17 audit items from `PHASE_5_AUDIT_REPORT.md` across security, performance, typing, React 19 hooks, and design system contracts.
+
+### Phase 5.5: Google Stitch Material 3 Travel Companion UI Kit Replatforming
+- **Design System Alignment**: Replatformed all visual styling and interaction flows against the official Google Stitch UI Kit (`projects/18365424198901142615` "Material 3 Web Showcase").
+- **Material 3 Tokens & Typography**: Integrated Coastal Azure (`#004b71`), Terracotta Clay (`#9c4330`), Earth Sage (`#25502c`), 5 surface container tone tiers, `Roboto Flex` variable typography, and `Material Symbols Outlined`.
+- **Universal App Shell**: 72-unit persistent desktop sidebar (`stitch-sidebar.tsx`) with active trip badge, navigation pill hierarchy, sync status indicator, and sticky top command bar (`stitch-header.tsx`).
+- **Replatformed Screens**:
+  - `/login`: Full-bleed Alpine vista hero, frosted glass card, Google OAuth button, and email OTP.
+  - `/explore`: Consular ticker feed, search bar, curated destination cards, and saved spots drawer.
+  - `/trips`: Trip Overview Command Center with departure countdown hero, 85% readiness radial gauge, AI concierge widget, 4-card metrics grid, and journey horizon strip.
+  - `/trips/[tripId]`: Day selector bar with daily weather, 60/40 timeline layout with real database activities, transit legs, PRD v3.0 price evidence badges, and route topology map.
+  - `/trips/[tripId]/budget` & `/budget`: Budget Intelligence view with liquidity hero, currency switch, financial provenance ribbon, line-item table, formula disclosure, and group split ledger.
+  - `/trips/[tripId]/vault` & `/vault`: Live Travel Intelligence Stream, secure document vault, and emergency assistance bar.
+  - `/profile`: Profile identity, travel pace, currency selection, registered device sync, cache breakdown, and danger zone.
+- **Deterministic Budget Engine (`src/lib/budget/calculations.ts`)**: Pure minor-unit integer arithmetic avoiding IEEE-754 floating-point drift, PRD v3.0 price evidence mapping, and penny-exact group split distribution.
+- **Itinerary Helpers (`src/lib/itinerary/helpers.ts`)**: Scaled transit formatting (`formatTransitDistance`, `formatTransitDuration`), evidence badge styling, and chronological activity sorting.
+
+### Phase 5.6: Google Stitch Home & Trip Planning Launcher Integration
+- **Stitch Screen `e1447daa66554418bda75c18b7e67c3d`**: Built the authoritative Home & Planning Launcher view (`stitch-home-launcher.tsx`).
+- **Post-Login Target**: After sign-in (and at root `/`), users land directly on the Home Launcher with the Quick Trip Planner.
+- **My Trips Flyout Dropdown**: Stitch header menu with live badge counters (`Active`, `Completed`, `Draft`) for instant workspace switching and `+ Plan New Trip` trigger.
+- **Quick Idea Chips & Pre-filled AI Wizard**: 1-tap destination pills ("Alpine Hiking", "Bullet Train Gastronomy", "Glacier Explorer", "Mediterranean Coast") pre-hydrating `/trips/new`.
+- **Live Route Telemetry & Spatial Verification**: Real-time Shinkansen, Cortina cable car, and FX window feeds paired with PostGIS sub-meter GPS map verification.
+- **Persistent Sidebar Integration**: Added "Home Launcher" (`roofing`) to the universal sidebar navigation rail.
+
+### Phase 5.7: Group Talk & Collaborative Hub (Milestone 7)
+- **Database Tables & RLS Migration (`supabase/migrations/20261108140000_group_collaboration_and_chat.sql`)**:
+  - `trip_invitations`: 7-day shareable invite links and email invites with role permissions (`owner`, `editor`, `viewer`).
+  - `trip_messages`: Real-time group chat stream powered by Supabase Realtime with instant message delivery.
+  - `trip_activity_proposals`: Collaborative itinerary changes (add, remove, modify, reorder) with peer voting (thumbs up/down) and consensus reaching.
+  - Default-deny RLS policies enforcing trip membership verification via `is_trip_member(trip_id, 'viewer')`.
+- **Peer Video & Audio Calling (`src/components/collaboration/webrtc-call-room.tsx`)**:
+  - Integrated zero-cost WebRTC peer video/audio room using Google's public STUN servers (`stun:stun.l.google.com:19302`) and Supabase Realtime broadcast channels for SDP signaling.
+  - Camera toggle, mic mute, screen sharing, duration timer, and participant cards.
+- **Collaboration Drawer (`src/components/collaboration/group-talk-drawer.tsx`)**:
+  - Slide-out drawer with 4 tabs: `Chat`, `Proposals & Polls`, `Friends & Invites`, and `Live Call`.
+  - Accessible directly via the persistent desktop sidebar and the trip itinerary header.
+
+### Phase 5.8: AI Contextual Packing & Gear Assistant (Milestone 8)
+- **Gemini-Powered Packing Engine (`src/lib/ai/packing.ts`)**:
+  - Destination, season, weather (rain risk, temperatures), and activity-grounded recommendations using `@google/genai`.
+  - Specifically recommends compact umbrellas, walking & temple-friendly slip-on shoes, daypacks, UV sun hats, modest temple layers, thermal garments, country power adapters, and blister kits.
+- **Persistence & API Route (`src/app/api/trips/[tripId]/packing/generate/route.ts` & `src/lib/packing/actions.ts`)**:
+  - Generates and persists items into `public.packing_items`.
+  - Server actions for toggling packed status, adding custom items, and deleting items.
+- **Material 3 Packing Companion UI (`src/components/packing/stitch-packing-view.tsx` & `/trips/[tripId]/packing`)**:
+  - Google Stitch Material 3 design with Coastal Azure palette.
+  - Packing progress indicator, category filter tabs (`Weather & Climate`, `Footwear & Bags`, `Attire & Layers`, `Electronics & Adapters`, `Essentials & Health`), add item modal, and AI re-analyze trigger.
+  - Available at `/trips/[tripId]/packing` and global `/packing`.
+
+### Phase 5.9: Live Grounding Integrations (Meteorology, FX Currency & Consular Feeds)
+- **Meteorology & Weather Grounding (`src/lib/weather/`)**:
+  - Live coordinates forecasting from Open-Meteo Global WMO API (`/api/weather`) returning current temperatures, rain probability %, rain sum mm, weather icons, and 7-day daily forecasts.
+  - Deterministic rain risk calculator (`low`, `moderate`, `high`) automatically driving the smart packing companion's umbrella, windbreaker, and waterproof gear recommendations.
+- **Deterministic FX Currency Engine (`src/lib/currency/`)**:
+  - Live central bank foreign exchange rates from European Central Bank via Frankfurter API (`/api/currency/rates`).
+  - Integer minor-unit conversion math strictly compliant with PRD v3.0 §5.7, eliminating floating-point drift.
+  - Interactive Material 3 currency switcher (`USD`, `JPY`, `EUR`, `GBP`, `CHF`) and live FX rate ribbon integrated into Budget Intelligence (`/trips/[tripId]/budget` and `/budget`).
+- **Consular Travel Advisories & Safety Feed (`src/lib/advisories/`)**:
+  - Official consular safety levels (Level 1 Normal to Level 4 Do Not Travel), emergency dispatch numbers (police, ambulance, tourist hotline), and passport validity requirements served via `/api/advisories`.
+  - Integrated into the Live Travel Intel Vault (`/trips/[tripId]/vault`) and Explore ticker (`/explore`).
+
+---
+
+## 4. Verification Evidence
+
+| Check | Result |
+| :--- | :--- |
+| `npm run typecheck` | Passed, 0 TypeScript errors |
+| `npm test` | Passed, 11 test files / 53 tests passing (1.64s) |
+| `npm run lint` | Passed, 0 ESLint errors, 0 warnings |
+| `npm run build` | Passed, Next.js 16.4 Turbopack build (25 routes compiled) |
+| `http://localhost:3000/api/weather?destination=Kyoto` | HTTP 200 OK (Open-Meteo Live Forecast) |
+| `http://localhost:3000/api/currency/rates?base=USD` | HTTP 200 OK (ECB Live Rates: JPY 158.33, EUR 0.895) |
+| `http://localhost:3000/api/advisories?destination=Japan` | HTTP 200 OK (MOFA Level 1 Safe, Police 110, Amb 119) |
+| `http://localhost:3000/budget` | HTTP 200 OK (Currency switch: USD, JPY, EUR, GBP, CHF) |
+| `http://localhost:3000/packing` | HTTP 200 OK (Weather-grounded gear checklist) |
 
