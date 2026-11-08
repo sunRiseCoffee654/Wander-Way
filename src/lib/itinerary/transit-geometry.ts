@@ -160,19 +160,46 @@ export function generateTransitCurve(
   return points;
 }
 
+export interface GeoJSONPointFeature {
+  type: "Feature";
+  id?: string;
+  geometry: {
+    type: "Point";
+    coordinates: [number, number]; // [lng, lat]
+  };
+  properties: Record<string, unknown>;
+}
+
+export interface GeoJSONLineFeature {
+  type: "Feature";
+  id?: string;
+  geometry: {
+    type: "LineString";
+    coordinates: [number, number][]; // Array of [lng, lat]
+  };
+  properties: Record<string, unknown>;
+}
+
+export type GeoJSONTransitFeature = GeoJSONPointFeature | GeoJSONLineFeature;
+
+export interface GeoJSONTransitCollection {
+  type: "FeatureCollection";
+  features: GeoJSONTransitFeature[];
+}
+
 /**
  * Builds a GeoJSON FeatureCollection containing waypoint points and transit line strings.
  */
 export function buildDayTransitGeoJSON(
   waypoints: WaypointItem[],
   transitLegs: TransitLegItem[],
-): GeoJSON.FeatureCollection {
+): GeoJSONTransitCollection {
   const waypointMap = new Map<string, WaypointItem>();
   for (const wp of waypoints) {
     waypointMap.set(wp.id, wp);
   }
 
-  const features: GeoJSON.Feature[] = [];
+  const features: GeoJSONTransitFeature[] = [];
 
   // 1. Waypoint Point Features
   for (const wp of waypoints) {
@@ -205,7 +232,9 @@ export function buildDayTransitGeoJSON(
       calculateHaversineDistance(origin.lat, origin.lng, dest.lat, dest.lng);
 
     const mode = detectTransitMode(distance, leg.mode);
-    const duration = leg.durationSeconds ?? Math.round(distance / (mode === "walk" ? 1.3 : mode === "shinkansen" ? 55 : 12));
+    const duration =
+      leg.durationSeconds ??
+      Math.round(distance / (mode === "walk" ? 1.3 : mode === "shinkansen" ? 55 : 12));
 
     const lineCoords =
       leg.coordinates && leg.coordinates.length >= 2
