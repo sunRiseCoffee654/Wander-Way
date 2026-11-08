@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import type { Database } from "@/lib/types/database";
 import type { DestinationWeatherForecast } from "@/lib/weather/types";
 import type { ConsularAdvisory } from "@/lib/advisories/types";
+import { cacheVaultOffline, getCachedVaultOffline } from "@/lib/offline/storage";
+import { useOfflineStatus } from "@/lib/offline/use-offline";
 
 type DbDocument = Database["public"]["Tables"]["documents"]["Row"];
 
@@ -83,9 +85,11 @@ const DEFAULT_DOCUMENTS: VaultDoc[] = [
 
 export function StitchVaultView({
   tripTitle = "Kyoto & Tokyo Autumn Journey 2025",
+  tripId = "default",
   destination = "Kyoto, Japan",
   dbDocuments,
 }: StitchVaultViewProps) {
+  const { isOffline } = useOfflineStatus(tripId);
   const [streamFilter, setStreamFilter] = useState<StreamCategory>("all");
   const [vaultFilter, setVaultFilter] = useState<VaultCategory>("all");
   const [isSyncing, setIsSyncing] = useState(false);
@@ -154,9 +158,22 @@ export function StitchVaultView({
           downloadName: doc.title,
         };
       })
-    : DEFAULT_DOCUMENTS;
+    : (() => {
+        const cached = getCachedVaultOffline<VaultDoc[]>(tripId || "default");
+        if (cached && cached.data && cached.data.length > 0) {
+          return cached.data;
+        }
+        return DEFAULT_DOCUMENTS;
+      })();
 
   const [documents, setDocuments] = useState<VaultDoc[]>(initialDocs);
+
+  // Auto-cache vault documents for offline availability
+  useEffect(() => {
+    if (documents && documents.length > 0) {
+      cacheVaultOffline(tripId || "default", documents);
+    }
+  }, [tripId, documents]);
 
   // Regional emergency services resolver based on destination
   const isSwiss = destination.toLowerCase().includes("switzerland") || destination.toLowerCase().includes("interlaken") || destination.toLowerCase().includes("alps");
@@ -236,6 +253,21 @@ export function StitchVaultView({
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary text-on-primary shadow-lg animate-in fade-in slide-in-from-top duration-300">
           <span className="material-symbols-outlined text-[20px]">check_circle</span>
           <span className="text-sm font-medium">{uploadNotice}</span>
+        </div>
+      )}
+
+      {/* Offline Mode Banner */}
+      {isOffline && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-tertiary-fixed text-on-tertiary-fixed shadow-xs">
+          <span className="material-symbols-outlined text-[24px]">offline_pin</span>
+          <div>
+            <span className="text-sm font-bold block">
+              Offline Vault Mode Active
+            </span>
+            <p className="text-xs text-on-tertiary-fixed/80">
+              You are browsing {documents.length} locally cached travel vouchers, e-tickets, and emergency numbers without an active connection.
+            </p>
+          </div>
         </div>
       )}
 

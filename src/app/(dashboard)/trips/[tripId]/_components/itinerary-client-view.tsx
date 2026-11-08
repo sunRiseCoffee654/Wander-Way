@@ -551,7 +551,7 @@ export function ItineraryClientView({
   const [exportNotice, setExportNotice] = useState(false);
   const [groupTalkOpen, setGroupTalkOpen] = useState(false);
 
-  const { isOffline, hasCachedItinerary } = useOfflineStatus(tripId);
+  const { isOffline } = useOfflineStatus(tripId);
 
   // Auto-cache itinerary for PWA offline accessibility
   useEffect(() => {
@@ -598,9 +598,11 @@ export function ItineraryClientView({
     ? dbDays.find((d) => d.day_number === selectedDay) || dbDays[0]
     : null;
 
-  const currentDbActivities = currentDbDay?.itinerary_activities
-    ? sortItineraryActivities(currentDbDay.itinerary_activities)
-    : [];
+  const currentDbActivities = useMemo(() => {
+    return currentDbDay?.itinerary_activities
+      ? sortItineraryActivities(currentDbDay.itinerary_activities)
+      : [];
+  }, [currentDbDay]);
 
   const currentShowcase = SHOWCASE_SCHEDULES[selectedDay] || SHOWCASE_SCHEDULES[2];
   const getEvidenceBadge = getItineraryEvidenceBadge;

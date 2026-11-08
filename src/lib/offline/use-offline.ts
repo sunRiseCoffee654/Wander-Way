@@ -21,10 +21,6 @@ export function useOfflineStatus(tripId?: string): OfflineStatus {
     return false;
   });
 
-  const [hasCachedItinerary, setHasCachedItinerary] = useState<boolean>(false);
-  const [hasCachedVault, setHasCachedVault] = useState<boolean>(false);
-  const [lastSynced, setLastSynced] = useState<Date | null>(null);
-
   useEffect(() => {
     function updateStatus() {
       if (typeof navigator !== "undefined") {
@@ -41,23 +37,23 @@ export function useOfflineStatus(tripId?: string): OfflineStatus {
     };
   }, []);
 
-  useEffect(() => {
-    if (!tripId) return;
+  // Derive cached availability directly during render
+  const cachedItin = tripId ? getCachedItineraryOffline(tripId) : null;
+  const cachedVault = tripId ? getCachedVaultOffline(tripId) : null;
 
-    const itin = getCachedItineraryOffline(tripId);
-    if (itin) {
-      setHasCachedItinerary(true);
-      setLastSynced(new Date(itin.cachedAt));
-    }
+  const hasCachedItinerary = Boolean(cachedItin);
+  const hasCachedVault = Boolean(cachedVault);
 
-    const vault = getCachedVaultOffline(tripId);
-    if (vault) {
-      setHasCachedVault(true);
-      if (!itin || new Date(vault.cachedAt) > new Date(itin.cachedAt)) {
-        setLastSynced(new Date(vault.cachedAt));
-      }
+  let lastSynced: Date | null = null;
+  if (cachedItin) {
+    lastSynced = new Date(cachedItin.cachedAt);
+  }
+  if (cachedVault) {
+    const vaultDate = new Date(cachedVault.cachedAt);
+    if (!lastSynced || vaultDate > lastSynced) {
+      lastSynced = vaultDate;
     }
-  }, [tripId, isOffline]);
+  }
 
   return {
     isOffline,

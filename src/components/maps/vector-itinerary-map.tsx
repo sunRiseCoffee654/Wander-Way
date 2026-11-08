@@ -32,6 +32,16 @@ const OFFLINE_FALLBACK_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
+function checkWebGLSupport(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
+  } catch {
+    return false;
+  }
+}
+
 export interface VectorItineraryMapProps {
   destination: string;
   waypoints: WaypointItem[];
@@ -55,7 +65,7 @@ export function VectorItineraryMap({
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, { marker: maplibregl.Marker; element: HTMLDivElement }>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [webGlSupported, setWebGlSupported] = useState(true);
+  const [webGlSupported] = useState<boolean>(() => checkWebGLSupport());
 
   // Compute computed transit legs if none provided
   const computedLegs = useMemo<TransitLegItem[]>(() => {
@@ -119,15 +129,7 @@ export function VectorItineraryMap({
 
   // Initialize MapLibre instance
   useEffect(() => {
-    if (!mapContainerRef.current) return;
-
-    // Check WebGL availability
-    const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) {
-      setWebGlSupported(false);
-      return;
-    }
+    if (!mapContainerRef.current || !webGlSupported) return;
 
     const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
     const styleUrl =
@@ -153,7 +155,6 @@ export function VectorItineraryMap({
       mapInstanceRef.current = map;
     } catch (err) {
       console.warn("[MapLibre] Failed to create map instance, falling back:", err);
-      setWebGlSupported(false);
       return;
     }
 
@@ -254,10 +255,11 @@ export function VectorItineraryMap({
       fitToWaypoints();
     });
 
+    const currentMarkers = markersRef.current;
     return () => {
       // Cleanup markers
-      markersRef.current.forEach(({ marker }) => marker.remove());
-      markersRef.current.clear();
+      currentMarkers.forEach(({ marker }) => marker.remove());
+      currentMarkers.clear();
       map.remove();
       mapInstanceRef.current = null;
       setMapLoaded(false);

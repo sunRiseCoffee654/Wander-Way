@@ -59,7 +59,7 @@ function getStorageItem(key: string): string | null {
   return memoryStore.get(key) ?? null;
 }
 
-function removeStorageItem(key: string): void {
+export function removeStorageItem(key: string): void {
   if (isStorageAvailable()) {
     try {
       window.localStorage.removeItem(key);

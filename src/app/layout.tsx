@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Roboto_Flex } from "next/font/google";
 import type { ReactNode } from "react";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import "./globals.css";
 
 const robotoFlex = Roboto_Flex({
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="bg-surface font-sans text-on-surface antialiased">
+        <ServiceWorkerRegister />
         <a className="skip-link" href="#main">
           Skip to content
         </a>
