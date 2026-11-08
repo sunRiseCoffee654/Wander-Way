@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import type { Database } from "@/lib/types/database";
@@ -11,6 +11,14 @@ import {
   sortItineraryActivities,
 } from "@/lib/itinerary/helpers";
 import { GroupTalkDrawer } from "@/components/collaboration/group-talk-drawer";
+import { VectorItineraryMap } from "@/components/maps/vector-itinerary-map";
+import {
+  extractWaypointsFromActivities,
+  resolveSelectedWaypointCardId,
+} from "@/lib/itinerary/sync-helpers";
+import { cacheItineraryOffline } from "@/lib/offline/storage";
+import { useOfflineStatus } from "@/lib/offline/use-offline";
+import type { WaypointItem, TransitLegItem } from "@/lib/itinerary/transit-geometry";
 
 type ItineraryDayWithActivities = Database["public"]["Tables"]["itinerary_days"]["Row"] & {
   itinerary_activities: Database["public"]["Tables"]["itinerary_activities"]["Row"][];
@@ -56,7 +64,7 @@ interface ShowcaseDayData {
   statusBadge: string;
   activities: ShowcaseActivity[];
   transits: ShowcaseTransit[];
-  mapWaypoints: Array<{ id: string; label: string; x: string; y: string; isAi?: boolean }>;
+  mapWaypoints: Array<{ id: string; label: string; x: string; y: string; lat: number; lng: number; isAi?: boolean }>;
   transitKm: string;
   transitMins: string;
 }
@@ -69,9 +77,9 @@ const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
     transitKm: "18.2 km",
     transitMins: "55 mins",
     mapWaypoints: [
-      { id: "1", label: "Haneda Airport (HND)", x: "22%", y: "78%" },
-      { id: "2", label: "Hotel Cerulean Shinjuku", x: "48%", y: "42%" },
-      { id: "3", label: "Omoide Yokocho", x: "58%", y: "30%" },
+      { id: "1", label: "Haneda Airport (HND)", x: "22%", y: "78%", lat: 35.5494, lng: 139.7798 },
+      { id: "2", label: "Hotel Cerulean Shinjuku", x: "48%", y: "42%", lat: 35.6895, lng: 139.6917 },
+      { id: "3", label: "Omoide Yokocho", x: "58%", y: "30%", lat: 35.6931, lng: 139.6998 },
     ],
     transits: [
       {
@@ -145,11 +153,11 @@ const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
     transitKm: "7.4 km",
     transitMins: "47 mins",
     mapWaypoints: [
-      { id: "1", label: "Nishiki Market", x: "18%", y: "28%" },
-      { id: "2", label: "Fushimi Inari", x: "52%", y: "74%" },
-      { id: "3", label: "Gion Karyo", x: "64%", y: "39%" },
-      { id: "4", label: "Kiyomizu (AI)", x: "82%", y: "52%", isAi: true },
-      { id: "5", label: "Pontocho", x: "44%", y: "25%" },
+      { id: "1", label: "Nishiki Market", x: "18%", y: "28%", lat: 35.0050, lng: 135.7649 },
+      { id: "2", label: "Fushimi Inari", x: "52%", y: "74%", lat: 34.9671, lng: 135.7727 },
+      { id: "3", label: "Gion Karyo", x: "64%", y: "39%", lat: 35.0022, lng: 135.7760 },
+      { id: "4", label: "Kiyomizu (AI)", x: "82%", y: "52%", lat: 34.9949, lng: 135.7850, isAi: true },
+      { id: "5", label: "Pontocho", x: "44%", y: "25%", lat: 35.0055, lng: 135.7712 },
     ],
     transits: [
       {
@@ -262,9 +270,9 @@ const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
     transitKm: "12.8 km",
     transitMins: "38 mins",
     mapWaypoints: [
-      { id: "1", label: "Kyoto Stn Shinkansen", x: "32%", y: "70%" },
-      { id: "2", label: "Tenryu-ji Temple", x: "65%", y: "35%" },
-      { id: "3", label: "Arashiyama Bamboo Grove", x: "78%", y: "24%" },
+      { id: "1", label: "Kyoto Stn Shinkansen", x: "32%", y: "70%", lat: 34.9858, lng: 135.7588 },
+      { id: "2", label: "Tenryu-ji Temple", x: "65%", y: "35%", lat: 35.0158, lng: 135.6776 },
+      { id: "3", label: "Arashiyama Bamboo Grove", x: "78%", y: "24%", lat: 35.0169, lng: 135.6713 },
     ],
     transits: [
       {
@@ -329,9 +337,9 @@ const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
     transitKm: "4.6 km",
     transitMins: "25 mins",
     mapWaypoints: [
-      { id: "1", label: "Kodai-ji Temple", x: "42%", y: "45%" },
-      { id: "2", label: "Tea Ceremony Machiya", x: "60%", y: "48%" },
-      { id: "3", label: "Philosophers Path", x: "85%", y: "22%" },
+      { id: "1", label: "Kodai-ji Temple", x: "42%", y: "45%", lat: 35.0003, lng: 135.7812 },
+      { id: "2", label: "Tea Ceremony Machiya", x: "60%", y: "48%", lat: 35.0015, lng: 135.7745 },
+      { id: "3", label: "Philosophers Path", x: "85%", y: "22%", lat: 35.0272, lng: 135.7955 },
     ],
     transits: [
       {
@@ -397,9 +405,9 @@ const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
     transitKm: "9.1 km",
     transitMins: "35 mins",
     mapWaypoints: [
-      { id: "1", label: "Kinkaku-ji (Golden Pavilion)", x: "35%", y: "20%" },
-      { id: "2", label: "Ryoan-ji Rock Garden", x: "24%", y: "26%" },
-      { id: "3", label: "Daitoku-ji Compound", x: "50%", y: "15%" },
+      { id: "1", label: "Kinkaku-ji (Golden Pavilion)", x: "35%", y: "20%", lat: 35.0394, lng: 135.7292 },
+      { id: "2", label: "Ryoan-ji Rock Garden", x: "24%", y: "26%", lat: 35.0345, lng: 135.7182 },
+      { id: "3", label: "Daitoku-ji Compound", x: "50%", y: "15%", lat: 35.0436, lng: 135.7441 },
     ],
     transits: [
       {
@@ -464,9 +472,9 @@ const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
     transitKm: "22.4 km",
     transitMins: "50 mins",
     mapWaypoints: [
-      { id: "1", label: "JR Nara Stn", x: "50%", y: "82%" },
-      { id: "2", label: "Todai-ji Great Buddha", x: "65%", y: "45%" },
-      { id: "3", label: "Nara Deer Park", x: "72%", y: "58%" },
+      { id: "1", label: "JR Nara Stn", x: "50%", y: "82%", lat: 34.6812, lng: 135.8197 },
+      { id: "2", label: "Todai-ji Great Buddha", x: "65%", y: "45%", lat: 34.6890, lng: 135.8398 },
+      { id: "3", label: "Nara Deer Park", x: "72%", y: "58%", lat: 34.6851, lng: 135.8430 },
     ],
     transits: [
       {
@@ -536,11 +544,26 @@ export function ItineraryClientView({
   const defaultDay = hasCustomSchedule ? (dbDays[0]?.day_number || 1) : 2;
   const [selectedDay, setSelectedDay] = useState<number>(defaultDay);
 
+  const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
   const [aiSuggestionAccepted, setAiSuggestionAccepted] = useState(false);
   const [aiSuggestionRemoved, setAiSuggestionRemoved] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(true);
   const [exportNotice, setExportNotice] = useState(false);
   const [groupTalkOpen, setGroupTalkOpen] = useState(false);
+
+  const { isOffline, hasCachedItinerary } = useOfflineStatus(tripId);
+
+  // Auto-cache itinerary for PWA offline accessibility
+  useEffect(() => {
+    if (tripId) {
+      cacheItineraryOffline(tripId, {
+        dbDays,
+        tripTitle,
+        destination,
+        cachedDay: selectedDay,
+      });
+    }
+  }, [tripId, dbDays, tripTitle, destination, selectedDay]);
 
   // Build the day navigation tabs
   const daysList = hasCustomSchedule
@@ -582,6 +605,61 @@ export function ItineraryClientView({
   const currentShowcase = SHOWCASE_SCHEDULES[selectedDay] || SHOWCASE_SCHEDULES[2];
   const getEvidenceBadge = getItineraryEvidenceBadge;
 
+  // Extract waypoints for MapLibre GL vector map
+  const currentWaypoints = useMemo<WaypointItem[]>(() => {
+    if (currentDbActivities.length > 0) {
+      return extractWaypointsFromActivities(currentDbActivities);
+    }
+    return currentShowcase.activities.map((act, idx) => {
+      const wp = currentShowcase.mapWaypoints[idx] || currentShowcase.mapWaypoints[0];
+      return {
+        id: act.id,
+        step: act.step,
+        title: act.title,
+        lat: wp.lat,
+        lng: wp.lng,
+        time: act.time,
+        category: act.category,
+        isAi: act.isAiSuggestion,
+      };
+    });
+  }, [currentDbActivities, currentShowcase]);
+
+  // Extract or compute transit legs
+  const currentTransitLegs = useMemo<TransitLegItem[]>(() => {
+    const legs: TransitLegItem[] = [];
+    if (currentShowcase.transits.length > 0 && currentWaypoints.length > 1) {
+      for (let i = 0; i < currentWaypoints.length - 1; i++) {
+        const from = currentWaypoints[i];
+        const to = currentWaypoints[i + 1];
+        const t = currentShowcase.transits[i];
+        const mode = t?.icon?.includes("walk")
+          ? "walk"
+          : t?.title?.toLowerCase().includes("shinkansen")
+          ? "shinkansen"
+          : "metro";
+        legs.push({
+          fromId: from.id,
+          toId: to.id,
+          mode,
+        });
+      }
+    }
+    return legs;
+  }, [currentShowcase.transits, currentWaypoints]);
+
+  // Bi-directional selection handler: Focuses timeline card when map pin is clicked
+  const handleSelectWaypoint = (activityId: string) => {
+    setActiveActivityId(activityId);
+    if (typeof document !== "undefined") {
+      const domId = resolveSelectedWaypointCardId(activityId);
+      const cardEl = document.getElementById(domId);
+      if (cardEl) {
+        cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col w-full pb-16">
       {/* Sticky Day Selector Bar */}
@@ -594,6 +672,12 @@ export function ItineraryClientView({
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
               Day {selectedDay} Active{hasCustomSchedule ? " • Custom Plan" : ""} • {destination}
             </span>
+            {isOffline && (
+              <span className="flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-semibold shadow-2xs">
+                <span className="material-symbols-outlined text-[14px]">offline_pin</span>
+                Offline Mode Active
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -734,8 +818,19 @@ export function ItineraryClientView({
               currentDbActivities.map((act, idx) => {
                 const evidenceInfo = getEvidenceBadge(act.booking_requirement ? "published_price" : "calculated_estimate");
                 return (
-                  <div key={act.id} className="flex flex-col gap-3">
-                    <div className="relative bg-surface-container-lowest rounded-2xl p-5 shadow-2xs hover:shadow-md transition-shadow border border-surface-container-high/40">
+                  <div
+                    key={act.id}
+                    id={resolveSelectedWaypointCardId(act.id)}
+                    onClick={() => setActiveActivityId(act.id)}
+                    className="flex flex-col gap-3 cursor-pointer"
+                  >
+                    <div
+                      className={`relative bg-surface-container-lowest rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all border ${
+                        activeActivityId === act.id
+                          ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
+                          : "border-surface-container-high/40"
+                      }`}
+                    >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3.5">
                           <div className="flex flex-col items-center">
@@ -862,11 +957,15 @@ export function ItineraryClientView({
                 return (
                   <div
                     key={act.id}
-                    className="flex flex-col gap-3 transition-transform duration-150 hover:scale-[1.008]"
+                    id={resolveSelectedWaypointCardId(act.id)}
+                    onClick={() => setActiveActivityId(act.id)}
+                    className="flex flex-col gap-3 transition-transform duration-150 hover:scale-[1.008] cursor-pointer"
                   >
                     <div
                       className={`relative rounded-2xl p-5 shadow-2xs transition-all border ${
-                        isAiCard
+                        activeActivityId === act.id
+                          ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
+                          : isAiCard
                           ? aiSuggestionAccepted
                             ? "bg-tertiary-fixed/30 border-tertiary/30"
                             : "bg-surface-container-lowest border-surface-container-high/40"
@@ -1036,132 +1135,16 @@ export function ItineraryClientView({
           </button>
         </div>
 
-        {/* Right Column: Route Topology Map (5 of 12 cols = ~40%) */}
+        {/* Right Column: Interactive Vector Map (MapLibre GL + Geoapify Vector Tiles) (5 of 12 cols = ~40%) */}
         <div className="lg:col-span-5 flex flex-col gap-4 sticky top-36">
-          <div className="bg-surface-container-lowest rounded-3xl p-5 shadow-2xs border border-surface-container-high/40 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">
-                  map
-                </span>
-                <h3 className="text-base font-semibold text-on-surface">
-                  Route Topology
-                </h3>
-              </div>
-              <div className="flex items-center gap-1.5 bg-surface-container px-2.5 py-1 rounded-full text-xs text-on-surface-variant font-medium">
-                <span className="size-2 rounded-full bg-tertiary animate-pulse" />
-                Live GPS Sourced
-              </div>
-            </div>
-
-            {/* Stylized Map Canvas with Pins & Transit Vector Paths */}
-            <div className="relative w-full h-80 bg-surface-container rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
-              {/* Subtle Road Grid Background */}
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                fill="none"
-                viewBox="0 0 400 320"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  className="text-surface-container-high stroke-current"
-                  d="M 20 80 Q 200 60 380 90"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-                <path
-                  className="text-surface-container-high stroke-current"
-                  d="M 50 20 L 50 300"
-                  strokeWidth="2"
-                />
-                <path
-                  className="text-surface-container-high stroke-current"
-                  d="M 180 20 L 180 300"
-                  strokeWidth="2"
-                />
-                <path
-                  className="text-surface-container-high stroke-current"
-                  d="M 320 20 L 320 300"
-                  strokeWidth="2"
-                />
-
-                {/* Route Vector Polylines */}
-                <path
-                  className="text-primary stroke-current"
-                  d="M 70 90 L 150 90 L 210 240"
-                  strokeDasharray="4 4"
-                  strokeLinecap="round"
-                  strokeWidth="3.5"
-                />
-                <path
-                  className="text-primary stroke-current"
-                  d="M 210 240 Q 240 180 260 130"
-                  strokeLinecap="round"
-                  strokeWidth="3.5"
-                />
-                <path
-                  className="text-secondary stroke-current"
-                  d="M 260 130 Q 300 140 330 170"
-                  strokeDasharray="3 3"
-                  strokeWidth="3"
-                />
-                <path
-                  className="text-primary-container stroke-current"
-                  d="M 330 170 Q 220 120 180 85"
-                  strokeLinecap="round"
-                  strokeWidth="3.5"
-                />
-              </svg>
-
-              {/* Waypoint Pins */}
-              {currentShowcase.mapWaypoints.map((wp, idx) => (
-                <div
-                  key={wp.id}
-                  style={{ left: wp.x, top: wp.y }}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer"
-                >
-                  <span
-                    className={`size-7 rounded-full text-xs font-bold flex items-center justify-center shadow-md ring-2 ring-surface-container-lowest ${
-                      wp.isAi
-                        ? "bg-secondary text-on-secondary"
-                        : "bg-primary text-on-primary"
-                    }`}
-                  >
-                    {idx + 1}
-                  </span>
-                  <span className="mt-1 px-1.5 py-0.5 rounded bg-surface/90 backdrop-blur-xs text-[10px] font-semibold text-on-surface shadow-xs truncate max-w-[100px]">
-                    {wp.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Waypoint Summary Cards below map */}
-            <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
-              <div className="bg-surface-container-low rounded-xl p-3 flex flex-col">
-                <span className="text-[10px] text-on-surface-variant uppercase font-semibold">
-                  Transit Coverage
-                </span>
-                <span className="text-base font-bold text-primary mt-0.5">
-                  {currentShowcase.transitKm}
-                </span>
-                <span className="text-[11px] text-on-surface-variant">
-                  Walking, Rail &amp; Taxi
-                </span>
-              </div>
-              <div className="bg-surface-container-low rounded-xl p-3 flex flex-col">
-                <span className="text-[10px] text-on-surface-variant uppercase font-semibold">
-                  Transit Time
-                </span>
-                <span className="text-base font-bold text-tertiary mt-0.5">
-                  {currentShowcase.transitMins}
-                </span>
-                <span className="text-[11px] text-on-surface-variant">
-                  All legs scheduled
-                </span>
-              </div>
-            </div>
-          </div>
+          <VectorItineraryMap
+            destination={destination}
+            waypoints={currentWaypoints}
+            transitLegs={currentTransitLegs}
+            activeActivityId={activeActivityId}
+            onSelectWaypoint={handleSelectWaypoint}
+            isOffline={isOffline}
+          />
         </div>
       </div>
 
