@@ -226,3 +226,32 @@ Completed for this document task: repository and instruction inspection, externa
 Before shipping, verify actual component states at 320/375/390/768/1024/1366/1440px as relevant, 200% text separately, text spacing, long/native-script content, light/dark, reduced motion and forced colors. Test keyboard, modal focus, no-drag ordering, map/list equivalence, OTP paste/autofill, retained errors, partial/stale/offline/permission states and all domain invariants. Record real device/browser/AT versions and performance conditions. The detailed acceptance criteria live in the companion plan.
 
 Future changes to this contract should be scoped: identify affected roles/components/routes, explain the user need, recheck color pairs and adjacent states, and preserve unrelated decisions. Resolve conflicting instructions in favour of product truth, accessible operation and the user's brief. This proposal does not authorise application implementation, installation, deployment, migration or replacement of existing project documents.
+
+---
+
+## 10. v3.2 Brand Assets, Glassmorphism & Motion Architecture
+
+### 10.1 Pure Image-Logo Brand Architecture
+WanderWay enforces a strict **Pure Image-Logo** policy across all navigation rails, footers, headers, and authentication forms. Brand names must never be rendered as standalone plain text `<span>WanderWay</span>` in place of the official brand marks:
+- **Horizontal Navigation Wordmark (`/nav_logo.png`)**: Dimension 1063 × 347. Used in the persistent desktop sidebar (`stitch-sidebar.tsx`), global top navigation header (`stitch-home-launcher.tsx`), footer anchors, and authentication screens (`login-form.tsx`).
+- **Primary Brand Crest (`/logo.png`)**: Dimension 1254 × 1254. Used for primary brand moments, large modal headers, and standalone brand splashes.
+- **App Icon & Companion Avatar (`/favicon.png`)**: Dimension 535 × 535. Used in browser tabs, metadata icons, and the WanderWay AI Companion widget.
+
+### 10.2 Multi-Layer Glassmorphism System
+Any floating container, badge, pill, or control that overlays background photography must implement true frosted glassmorphism rather than flat opaque fills:
+- **Blur Recipe:** `backdrop-blur-xl` or `backdrop-blur-2xl`.
+- **Translucent Tonal Fill:** `bg-white/80 dark:bg-stone-900/80` (or `bg-black/50` on dark scrims).
+- **Subtle Light Borders:** `border border-white/40 dark:border-white/15`.
+- **Soft Shadows & Focus Rings:** `shadow-xl ring-1 ring-black/5`.
+- **Applied Surfaces:**
+  - Home Launcher Quick Trip Planner floating bar
+  - Hero Pill Badges & Trust Highlight chips
+  - Trending Journeys route badges and duration pills
+  - Explore Hub destination rank badges
+  - Active Trip Hero countdown indicators and action buttons
+  - Alpine Vista Auth Form card and telemetry chips
+
+### 10.3 Dual-Engine Animation Architecture
+- **GSAP 3 (`@gsap/react`)**: Owns complex multi-element hero choreography, numeric counter interpolations, and radial progress gauges (`useGSAP`).
+- **Motion v12 (`motion/react`)**: Owns state transitions, spring tactile buttons (`whileHover`, `whileTap`), sliding indicator pills (`layoutId`), and drawer entry/exit animations (`AnimatePresence`).
+- **Accessibility:** Governed by `useReducedMotion()`, suppressing layout translation and scaling whenever reduced motion is detected.
