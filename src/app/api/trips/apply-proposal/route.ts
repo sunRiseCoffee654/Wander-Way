@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const ApplyProposalSchema = z.object({
   proposalId: z.string().uuid("Invalid proposal ID"),
+  tripId: z.string().uuid("Invalid trip ID").optional(),
   selectedActivityIds: z.array(z.string()).default([]),
 });
 
@@ -31,9 +32,24 @@ export async function POST(request: Request) {
 
     const { proposalId, selectedActivityIds } = parsed.data;
 
+    let tripId = parsed.data.tripId;
+    if (!tripId) {
+      const { data: propRow } = await supabase
+        .from("trip_proposals")
+        .select("trip_id")
+        .eq("id", proposalId)
+        .maybeSingle();
+      tripId = propRow?.trip_id;
+    }
+
+    if (!tripId) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+    }
+
     // Call atomic apply RPC
     const { data: result, error: rpcError } = await supabase.rpc("apply_trip_proposal", {
       p_proposal_id: proposalId,
+      p_trip_id: tripId,
       p_selected_activity_ids: selectedActivityIds,
     });
 

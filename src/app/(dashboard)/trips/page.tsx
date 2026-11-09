@@ -193,7 +193,7 @@ export default async function TripsPage() {
             {POPULAR_DESTINATIONS.map((dest) => (
               <Link
                 key={dest.name}
-                href={`/trips/new?destination=${encodeURIComponent(dest.name)}` as Route}
+                href={`/trips/new?dest=${encodeURIComponent(dest.name)}` as Route}
                 className={`p-5 rounded-2xl bg-surface-container-low border border-surface-container-high/60 hover:border-primary/40 hover:shadow-md transition-all group flex flex-col justify-between bg-gradient-to-br ${dest.bgClass}`}
               >
                 <div>

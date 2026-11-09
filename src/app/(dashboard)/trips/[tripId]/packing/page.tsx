@@ -23,7 +23,7 @@ export default async function TripPackingPage(props: {
   let trip: {
     id: string;
     title: string;
-    destination_name: string;
+    destination: string;
     start_date: string;
     end_date: string;
   } | null = null;
@@ -31,7 +31,7 @@ export default async function TripPackingPage(props: {
   if (user) {
     const { data: tripData } = await supabase
       .from("trips")
-      .select("id, title, destination_name, start_date, end_date")
+      .select("id, title, destination, start_date, end_date")
       .eq("id", tripId)
       .maybeSingle();
 
@@ -45,7 +45,7 @@ export default async function TripPackingPage(props: {
     notFound();
   }
 
-  const destination = trip.destination_name || "Destination";
+  const destination = trip.destination || "Destination";
   const tripTitle = trip.title || `Trip to ${destination}`;
   const initialItems = await getPackingItems(tripId);
 

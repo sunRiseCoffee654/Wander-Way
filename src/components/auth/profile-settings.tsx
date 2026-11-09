@@ -58,7 +58,7 @@ export default function ProfileSettings({
             full_name: data.full_name || prev.full_name,
             home_location: data.home_location || prev.home_location,
             preferred_currency: data.preferred_currency || prev.preferred_currency,
-            travel_pace: data.travel_pace || prev.travel_pace,
+            travel_pace: (data.travel_preferences as Record<string, string>)?.travel_pace || prev.travel_pace,
           }));
         }
       }
@@ -95,7 +95,7 @@ export default function ProfileSettings({
       full_name: formData.full_name || null,
       home_location: formData.home_location || null,
       preferred_currency: formData.preferred_currency,
-      travel_pace: formData.travel_pace,
+      travel_preferences: { travel_pace: formData.travel_pace },
       updated_at: new Date().toISOString(),
     });
 

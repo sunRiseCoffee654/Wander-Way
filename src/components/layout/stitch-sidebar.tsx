@@ -19,12 +19,15 @@ export function StitchSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isGroupTalkOpen, setIsGroupTalkOpen] = useState(false);
 
-  const itineraryHref = (activeTripId ? `/trips/${activeTripId}` : "/trips") as Route;
-  const bookingsHref = (activeTripId ? `/trips/${activeTripId}/bookings` : "/trips") as Route;
-  const budgetHref = (activeTripId ? `/trips/${activeTripId}/budget` : "/budget") as Route;
-  const intelligenceHref = (activeTripId ? `/trips/${activeTripId}/intelligence` : "/vault") as Route;
-  const vaultHref = (activeTripId ? `/trips/${activeTripId}/vault` : "/vault") as Route;
-  const packingHref = (activeTripId ? `/trips/${activeTripId}/packing` : "/packing") as Route;
+  const tripMatch = pathname?.match(/^\/trips\/([^/]+)/);
+  const resolvedTripId = (tripMatch && tripMatch[1] !== "new") ? tripMatch[1] : activeTripId;
+
+  const itineraryHref = (resolvedTripId ? `/trips/${resolvedTripId}` : "/trips") as Route;
+  const bookingsHref = (resolvedTripId ? `/trips/${resolvedTripId}/bookings` : "/trips") as Route;
+  const budgetHref = (resolvedTripId ? `/trips/${resolvedTripId}/budget` : "/budget") as Route;
+  const intelligenceHref = (resolvedTripId ? `/trips/${resolvedTripId}/intelligence` : "/vault") as Route;
+  const vaultHref = (resolvedTripId ? `/trips/${resolvedTripId}/vault` : "/vault") as Route;
+  const packingHref = (resolvedTripId ? `/trips/${resolvedTripId}/packing` : "/packing") as Route;
 
   const navItems: { href: Route; label: string; icon: string; isActive: boolean }[] = [
     {
@@ -267,7 +270,7 @@ export function StitchSidebar({
 
       {/* Group Talk Slide-Out Drawer & Video Room */}
       <GroupTalkDrawer
-        tripId={activeTripId || "default"}
+        tripId={resolvedTripId || "default"}
         tripTitle={currentTripTitle}
         isOpen={isGroupTalkOpen}
         onClose={() => setIsGroupTalkOpen(false)}

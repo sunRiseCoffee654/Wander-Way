@@ -17,7 +17,7 @@ interface MemberDbRow {
   user_id: string;
   role: "owner" | "editor" | "viewer";
   joined_at: string;
-  profiles?: { id: string; display_name: string | null; avatar_url: string | null } | null;
+  profiles?: { id: string; full_name: string | null; avatar_url: string | null } | null;
 }
 
 interface MessageDbRow {
@@ -28,7 +28,7 @@ interface MessageDbRow {
   message_type: MessageType;
   metadata?: Record<string, unknown>;
   created_at: string;
-  profiles?: { display_name: string | null; avatar_url: string | null } | null;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
 }
 
 interface ProposalDbRow {
@@ -43,7 +43,7 @@ interface ProposalDbRow {
   upvotes: string[] | null;
   downvotes: string[] | null;
   created_at: string;
-  profiles?: { display_name: string | null } | null;
+  profiles?: { full_name: string | null } | null;
 }
 
 /**
@@ -54,7 +54,7 @@ export async function getTripMembers(tripId: string): Promise<TripMember[]> {
     const supabase = await createClient();
     const { data: members, error } = await supabase
       .from("trip_members")
-      .select("id, trip_id, user_id, role, joined_at, profiles(id, display_name, avatar_url)")
+      .select("id, trip_id, user_id, role, joined_at, profiles(id, full_name, avatar_url)")
       .eq("trip_id", tripId)
       .order("joined_at", { ascending: true });
 
@@ -67,7 +67,7 @@ export async function getTripMembers(tripId: string): Promise<TripMember[]> {
         joined_at: m.joined_at,
         profile: m.profiles ? {
           id: m.profiles.id,
-          display_name: m.profiles.display_name,
+          display_name: m.profiles.full_name,
           avatar_url: m.profiles.avatar_url,
         } : undefined,
       }));
@@ -106,7 +106,7 @@ export async function getTripMessages(tripId: string): Promise<TripMessage[]> {
     const supabase = await createClient();
     const { data: messages, error } = await supabase
       .from("trip_messages")
-      .select("id, trip_id, sender_id, content, message_type, metadata, created_at, profiles(display_name, avatar_url)")
+      .select("id, trip_id, sender_id, content, message_type, metadata, created_at, profiles(full_name, avatar_url)")
       .eq("trip_id", tripId)
       .order("created_at", { ascending: true })
       .limit(100);
@@ -123,7 +123,7 @@ export async function getTripMessages(tripId: string): Promise<TripMessage[]> {
       message_type: m.message_type,
       metadata: m.metadata,
       created_at: m.created_at,
-      sender_name: m.profiles?.display_name || "Traveler",
+      sender_name: m.profiles?.full_name || "Traveler",
       sender_avatar: m.profiles?.avatar_url || undefined,
     }));
   } catch (err) {
@@ -197,7 +197,7 @@ export async function getTripProposals(tripId: string): Promise<TripActivityProp
     const supabase = await createClient();
     const { data: proposals, error } = await supabase
       .from("trip_activity_proposals")
-      .select("id, trip_id, proposer_id, day_id, proposed_action, target_activity_id, proposal_data, status, upvotes, downvotes, created_at, profiles(display_name)")
+      .select("id, trip_id, proposer_id, day_id, proposed_action, target_activity_id, proposal_data, status, upvotes, downvotes, created_at, profiles(full_name)")
       .eq("trip_id", tripId)
       .order("created_at", { ascending: false });
 
@@ -217,7 +217,7 @@ export async function getTripProposals(tripId: string): Promise<TripActivityProp
       upvotes: p.upvotes || [],
       downvotes: p.downvotes || [],
       created_at: p.created_at,
-      proposer_name: p.profiles?.display_name || "Co-Traveler",
+      proposer_name: p.profiles?.full_name || "Co-Traveler",
     }));
   } catch (err) {
     console.warn("getTripProposals error:", err);

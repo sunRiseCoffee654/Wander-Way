@@ -29,7 +29,6 @@ export async function createDocumentAction(
   try {
     if (
       !docData.trip_id ||
-      !docData.uploaded_by ||
       !docData.title ||
       !docData.category ||
       !docData.storage_path ||
@@ -39,10 +38,26 @@ export async function createDocumentAction(
       return { success: false, error: "All document metadata fields are required." };
     }
 
+    let uploadedBy = docData.uploaded_by && docData.uploaded_by !== "current_user" ? docData.uploaded_by : null;
+
+    try {
+      const supabase = await createClient();
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user?.id) {
+        uploadedBy = authData.user.id;
+      }
+    } catch {
+      // Fall through in test or offline contexts
+    }
+
+    if (!uploadedBy) {
+      return { success: false, error: "Authentication required to upload documents." };
+    }
+
     const newDoc: DocumentRecord = {
-      id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: crypto.randomUUID(),
       trip_id: docData.trip_id,
-      uploaded_by: docData.uploaded_by,
+      uploaded_by: uploadedBy,
       title: docData.title.trim(),
       category: docData.category,
       storage_path: docData.storage_path,
@@ -187,19 +202,22 @@ export async function getVaultDocumentsAction(
   tripId: string
 ): Promise<{ success: boolean; documents: DocumentRecord[]; error?: string }> {
   try {
-    try {
-      const supabase = await createClient();
-      const { data, error } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("trip_id", tripId)
-        .order("created_at", { ascending: false });
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tripId);
+    if (isUuid) {
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+          .from("documents")
+          .select("*")
+          .eq("trip_id", tripId)
+          .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        return { success: true, documents: data as DocumentRecord[] };
+        if (!error && data && data.length > 0) {
+          return { success: true, documents: data as DocumentRecord[] };
+        }
+      } catch {
+        // Fall through to memory store
       }
-    } catch {
-      // Fall through to memory store
     }
 
     const docs = Array.from(VAULT_STORE.values()).filter(

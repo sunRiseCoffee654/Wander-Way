@@ -26,7 +26,7 @@ export default async function HomePage() {
         .maybeSingle(),
       supabase
         .from("trips")
-        .select("id, title, destination, start_date, end_date, traveler_count, status")
+        .select("id, title, destination, start_date, end_date, traveler_count, status:trip_state")
         .order("created_at", { ascending: false }),
     ]);
 

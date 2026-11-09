@@ -26,6 +26,8 @@ export interface SettlementTransfer {
 export interface ExpenseItemInput {
   paidByUserId: string;
   amountMinor: number;
+  currency?: string;
+  fxRateToTripCurrency?: number;
   splitWithUserIds?: string[];
   splitRatios?: Record<string, number>;
 }
@@ -45,7 +47,8 @@ export function verifyZeroSum(balances: MemberBalance[]): boolean {
  */
 export function calculateNetBalances(
   members: Array<{ id: string; name: string }>,
-  expenses: ExpenseItemInput[]
+  expenses: ExpenseItemInput[],
+  targetCurrency?: string
 ): MemberBalance[] {
   const balanceMap = new Map<string, MemberBalance>();
   for (const m of members) {
@@ -57,8 +60,20 @@ export function calculateNetBalances(
   }
 
   for (const exp of expenses) {
-    const amount = Math.max(0, Math.round(exp.amountMinor));
-    if (amount === 0) continue;
+    const rawAmount = Math.max(0, Math.round(exp.amountMinor));
+    if (rawAmount === 0) continue;
+
+    // Normalize to targetCurrency if fx rate is present
+    let amount = rawAmount;
+    if (targetCurrency && exp.currency && exp.currency.toUpperCase() !== targetCurrency.toUpperCase()) {
+      if (exp.fxRateToTripCurrency && exp.fxRateToTripCurrency > 0) {
+        amount = Math.round(rawAmount * exp.fxRateToTripCurrency);
+      } else {
+        console.warn(
+          `[calculateNetBalances] Expense currency ${exp.currency} does not match target ${targetCurrency} and has no fxRateToTripCurrency.`
+        );
+      }
+    }
 
     // Credit payer
     const payer = balanceMap.get(exp.paidByUserId);

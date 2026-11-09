@@ -11,7 +11,13 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/trips";
+  const rawNext = requestUrl.searchParams.get("next");
+  const oauthError = requestUrl.searchParams.get("error");
+
+  if (oauthError) {
+    console.error("[OAuth callback error]", oauthError, requestUrl.searchParams.get("error_description"));
+    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(oauthError)}`, requestUrl.origin));
+  }
 
   if (code) {
     const cookieStore = await cookies();
@@ -36,8 +42,22 @@ export async function GET(request: Request) {
         },
       }
     );
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      console.error("[OAuth exchange error]", error);
+      return NextResponse.redirect(new URL("/login?error=auth_exchange_failed", requestUrl.origin));
+    }
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}${next}`);
+  let safeNext = "/trips";
+  if (rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.includes("\\") && !rawNext.includes("@")) {
+    try {
+      const parsed = new URL(rawNext, requestUrl.origin);
+      if (parsed.origin === requestUrl.origin) {
+        safeNext = parsed.pathname + parsed.search + parsed.hash;
+      }
+    } catch {}
+  }
+
+  return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
 }

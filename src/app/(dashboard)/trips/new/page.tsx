@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default async function NewTripPage(props: {
   searchParams?: Promise<{
     dest?: string;
+    destination?: string;
     startDate?: string;
     endDate?: string;
     party?: string;
@@ -26,7 +27,7 @@ export default async function NewTripPage(props: {
     <div className="mx-auto w-full max-w-app px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <TripWizard
         userId={user?.id || "demo-traveler"}
-        initialDestination={searchParams.dest}
+        initialDestination={searchParams.dest || searchParams.destination}
         initialStartDate={searchParams.startDate}
         initialEndDate={searchParams.endDate}
         initialParty={searchParams.party}

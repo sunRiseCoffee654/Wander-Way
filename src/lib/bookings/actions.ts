@@ -107,7 +107,7 @@ export async function createBookingAction(
     }
 
     const newBooking: Booking = {
-      id: `booking-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: crypto.randomUUID(),
       trip_id: data.trip_id,
       provider_name: data.provider_name.trim(),
       booking_type: data.booking_type,
@@ -277,20 +277,23 @@ export async function getBookingsAction(
       seedDemoBookings(tripId);
     }
 
-    // Try Supabase first
-    try {
-      const supabase = await createClient();
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("trip_id", tripId)
-        .order("created_at", { ascending: false });
+    // Try Supabase first if tripId is a valid UUID
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tripId);
+    if (isUuid) {
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("trip_id", tripId)
+          .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        return { success: true, bookings: data as Booking[] };
+        if (!error && data && data.length > 0) {
+          return { success: true, bookings: data as Booking[] };
+        }
+      } catch {
+        // Fall through to memory store
       }
-    } catch {
-      // Fall through to memory store
     }
 
     const memoryList = Array.from(BOOKINGS_STORE.values()).filter(

@@ -20,12 +20,12 @@ export default async function TripBookingsPage(props: {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let trip: { id: string; title: string; destination: string; base_currency?: string } | null = null;
+  let trip: { id: string; title: string; destination: string; budget_currency?: string } | null = null;
 
   if (user) {
     const { data: tripData } = await supabase
       .from("trips")
-      .select("id, title, destination, base_currency")
+      .select("id, title, destination, budget_currency")
       .eq("id", tripId)
       .maybeSingle();
     trip = tripData;
@@ -45,7 +45,7 @@ export default async function TripBookingsPage(props: {
         tripId={tripId}
         tripTitle={trip.title || `Trip to ${trip.destination}`}
         initialBookings={bookings}
-        defaultCurrency={trip.base_currency || "USD"}
+        defaultCurrency={trip.budget_currency || "USD"}
       />
     </div>
   );

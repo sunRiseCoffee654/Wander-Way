@@ -19,13 +19,13 @@ export default async function GlobalPackingPage() {
   let trip: {
     id: string;
     title: string;
-    destination_name: string;
+    destination: string;
   } | null = null;
 
   if (user) {
     const { data } = await supabase
       .from("trips")
-      .select("id, title, destination_name")
+      .select("id, title, destination")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -33,7 +33,7 @@ export default async function GlobalPackingPage() {
   }
 
   const tripId = trip?.id || "default";
-  const destination = trip?.destination_name || "Destination";
+  const destination = trip?.destination || "Destination";
   const tripTitle = trip?.title || "Smart Packing & Gear";
   const initialItems = await getPackingItems(tripId);
 
