@@ -228,10 +228,10 @@ export function ExploreClient() {
 
   return (
     <div className="min-h-screen bg-surface font-sans text-on-surface antialiased flex flex-col">
-      <StitchSidebar currentTripTitle="Kyoto & Tokyo" activeTripId="kyoto-autumn-2025" />
+      <StitchSidebar />
 
       <div className="pl-0 lg:pl-72 flex flex-col min-h-screen w-full">
-        <StitchHeader tripDatesSubtitle="Kyoto & Tokyo Autumn Journey • Oct 14 - Oct 24" />
+        <StitchHeader />
 
         <main className="relative pt-16 min-h-screen bg-surface w-full px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col w-full py-6">

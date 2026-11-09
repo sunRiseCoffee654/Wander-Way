@@ -43,26 +43,28 @@ export default async function DashboardLayout({
 
   const datesSubtitle = latestTrip?.start_date && latestTrip?.end_date
     ? `${latestTrip.title} • ${new Date(latestTrip.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(latestTrip.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-    : `${latestTrip?.title || "Kyoto & Tokyo Autumn Journey"} • Oct 14 - Oct 24`;
+    : latestTrip?.title
+    ? `${latestTrip.title} • Active Journey`
+    : "WanderWay • Grounded Travel Companion";
 
   return (
     <div className="min-h-screen bg-surface font-sans text-on-surface antialiased flex flex-col">
       <StitchSidebar
-        currentTripTitle={latestTrip?.title || "Kyoto & Tokyo"}
-        activeTripId={latestTrip?.id || "kyoto-autumn-2025"}
+        currentTripTitle={latestTrip?.title || "Plan a Journey"}
+        activeTripId={latestTrip?.id}
       />
       <div className="pl-0 lg:pl-72 flex flex-col min-h-screen w-full">
         <StitchHeader
           tripDatesSubtitle={datesSubtitle}
-          userName={profile?.full_name || (user?.email ? user.email.split("@")[0] : "Elena Rostova")}
+          userName={profile?.full_name || (user?.email ? user.email.split("@")[0] : "Traveler")}
           userAvatar={profile?.avatar_url || undefined}
-          userEmail={user?.email || "demo@wanderway.app"}
+          userEmail={user?.email || ""}
         />
         {!user && (
           <div className="bg-primary/10 border-b border-primary/20 px-4 sm:px-6 lg:px-8 py-2.5 text-xs text-primary flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">visibility</span>
-              <span><strong>Showcase Mode:</strong> Exploring WanderWay with the Google Stitch Material 3 Travel Companion.</span>
+              <span className="material-symbols-outlined text-sm">info</span>
+              <span>Sign in to save your itineraries, track expenses, and access the document vault offline.</span>
             </div>
             <a href="/login" className="font-semibold underline hover:text-primary-container">
               Sign in to sync your trips →

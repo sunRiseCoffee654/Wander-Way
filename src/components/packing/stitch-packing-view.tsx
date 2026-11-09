@@ -33,13 +33,13 @@ const CATEGORIES = [
 
 export function StitchPackingView({
   tripId,
-  tripTitle = "Kyoto & Tokyo Autumn Odyssey",
-  destination = "Kyoto, Japan",
+  tripTitle = "Smart Packing & Gear",
+  destination = "Destination",
   initialItems,
   weatherOverview = {
-    expected_conditions: "Mild sunny afternoons, cool evenings, 35% chance of light passing rain",
-    temperature_range: "12°C - 19°C (54°F - 66°F)",
-    rain_risk: "moderate",
+    expected_conditions: "Check local forecast for seasonal conditions",
+    temperature_range: "Seasonal",
+    rain_risk: "low",
   },
 }: StitchPackingViewProps) {
   const [items, setItems] = useState<PackingItemRecord[]>(initialItems);

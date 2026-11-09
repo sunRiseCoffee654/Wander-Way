@@ -40,7 +40,12 @@ export async function getPackingItems(tripId: string): Promise<PackingItemRecord
     }
   }
 
-  // Return cached or initialized demo items
+  // Return empty list for real trips if no packing items saved yet
+  if (!tripId.startsWith("mock-")) {
+    return [];
+  }
+
+  // Return cached or initialized mock items for testing
   if (DEMO_ITEMS_CACHE[tripId]) {
     return DEMO_ITEMS_CACHE[tripId];
   }
@@ -53,7 +58,7 @@ export async function getPackingItems(tripId: string): Promise<PackingItemRecord
     item_name: it.item_name,
     notes: it.reason,
     quantity: it.quantity,
-    is_packed: idx === 0 || idx === 3, // Pre-check umbrella & walking shoes for nice visual
+    is_packed: false,
     is_suggested: true,
     created_at: new Date(Date.now() - idx * 60000).toISOString(),
   }));

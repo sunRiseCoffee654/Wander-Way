@@ -11,8 +11,8 @@ interface StitchHeaderProps {
 }
 
 export function StitchHeader({
-  tripDatesSubtitle = "Kyoto & Tokyo Autumn Journey • Oct 14 - Oct 24",
-  userAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuDMWXf_SGnMNfpSWsO5--Xq6IkevaA58P9MR7YNK3sxkBpoMk3dawGJjMEs_RuTKN5eQy8E0jC5tMsSQSqbk7v0NKv_oybkYjg2cBI8WaUv4w2XXVRtbEs6jq9-iqRj_ErSflvyagYfCCjjCp24j__KR74LY8TsrdMz8c4Sot6IJQjv-VW32hzSvlJPkVgPAKMfYFsyJKtDDP0Jc1lRUowhQWk4kULIB1fDKrnNkYZe",
+  tripDatesSubtitle = "WanderWay • Grounded Travel Companion",
+  userAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80",
 }: StitchHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(false);

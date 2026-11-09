@@ -26,7 +26,7 @@ export default async function TripBudgetPage(props: {
   if (user) {
     const { data: tripData } = await supabase
       .from("trips")
-      .select("id, title, budget_minor_units, budget_currency, budget_basis")
+      .select("id, title, destination, budget_minor_units, budget_currency, budget_basis")
       .eq("id", tripId)
       .maybeSingle();
     trip = tripData;
@@ -41,23 +41,18 @@ export default async function TripBudgetPage(props: {
     }
   }
 
-  const isShowcase = tripId === "kyoto-autumn-2025" || tripId === "default";
-  if (!trip && !isShowcase) {
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        tripId
-      );
-    if (isUuid) {
-      notFound();
-    }
+  // If trip not found in DB, return 404
+  if (!trip) {
+    notFound();
   }
 
   return (
     <StitchBudgetView
-      tripTitle={trip?.title || "Kyoto & Tokyo Autumn Journey 2025"}
-      budgetLimitMinorUnits={trip?.budget_minor_units}
-      budgetCurrency={trip?.budget_currency || "INR"}
-      budgetBasis={trip?.budget_basis || "total"}
+      tripId={tripId}
+      tripTitle={trip.title || `Trip to ${trip.destination}`}
+      budgetLimitMinorUnits={trip.budget_minor_units}
+      budgetCurrency={trip.budget_currency || "INR"}
+      budgetBasis={trip.budget_basis || "total"}
       dbLineItems={lineItems || []}
     />
   );

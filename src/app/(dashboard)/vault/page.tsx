@@ -43,9 +43,9 @@ export default async function GlobalVaultPage() {
 
   return (
     <StitchVaultView
-      tripTitle={trip?.title || "Kyoto & Tokyo Autumn Journey 2025"}
-      tripId={trip?.id || "kyoto-autumn-2025"}
-      destination={trip?.destination || "Kyoto, Japan"}
+      tripTitle={trip?.title || "Document Vault"}
+      tripId={trip?.id || "default"}
+      destination={trip?.destination || "Destination"}
       dbDocuments={dbDocuments}
     />
   );

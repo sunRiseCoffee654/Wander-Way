@@ -6,7 +6,6 @@ import type { Database } from "@/lib/types/database";
 import {
   calculateBudgetTotals,
   normalizePriceEvidence,
-  type BudgetLineItemLike,
 } from "@/lib/budget/calculations";
 import {
   convertMinorUnitsDeterministic,
@@ -14,29 +13,50 @@ import {
   getLiveExchangeRates,
 } from "@/lib/currency/service";
 import type { SupportedCurrency } from "@/lib/currency/types";
+import { ExpenseModal } from "./expense-modal";
+import { DebtSettlementCard } from "./debt-settlement-card";
+import type { ExpenseItemInput } from "@/lib/budget/settlement";
 
 type DbLineItem = Database["public"]["Tables"]["budget_line_items"]["Row"];
 
-interface StitchBudgetViewProps {
+export interface StitchBudgetViewProps {
+  tripId?: string;
   tripTitle?: string;
   budgetLimitMinorUnits?: number;
   budgetCurrency?: string;
   budgetBasis?: string;
   dbLineItems?: DbLineItem[];
+  members?: Array<{ id: string; name: string }>;
 }
 
+const DEFAULT_MEMBERS = [
+  { id: "user_you", name: "You (Organizer)" },
+];
+
 export function StitchBudgetView({
-  tripTitle = "Kyoto & Tokyo Autumn Journey 2025",
+  tripId = "default",
+  tripTitle = "Trip Budget",
   budgetLimitMinorUnits,
   budgetCurrency = "INR",
   dbLineItems,
+  members,
 }: StitchBudgetViewProps) {
   const [viewMode, setViewMode] = useState<"group" | "person">("group");
-  const [expenseNotice, setExpenseNotice] = useState(false);
-  const [settleNotice, setSettleNotice] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [recordedExpenses, setRecordedExpenses] = useState<DbLineItem[]>([]);
+  const [sharedExpenses, setSharedExpenses] = useState<ExpenseItemInput[]>(() => {
+    return (dbLineItems || []).map((it) => ({
+      paidByUserId: it.paid_by_user_id || "user_you",
+      amountMinor: it.amount_minor_units,
+      splitWithUserIds: members && members.length > 0 ? members.map((m) => m.id) : ["user_you"],
+    }));
+  });
+
   const [displayCurrency, setDisplayCurrency] = useState<SupportedCurrency>("INR");
   const [ratesMap, setRatesMap] = useState<Record<string, number>>({});
   const [rateSource, setRateSource] = useState<string>("European Central Bank");
+
+  const activeMembers = members && members.length > 0 ? members : DEFAULT_MEMBERS;
 
   useEffect(() => {
     getLiveExchangeRates(budgetCurrency).then((res) => {
@@ -44,6 +64,18 @@ export function StitchBudgetView({
       setRateSource(res.source);
     });
   }, [budgetCurrency]);
+
+  const handleExpenseAdded = (newItem: DbLineItem, splitWithUserIds: string[]) => {
+    setRecordedExpenses((prev) => [newItem, ...prev]);
+    setSharedExpenses((prev) => [
+      {
+        paidByUserId: newItem.paid_by_user_id || "user_elena",
+        amountMinor: newItem.amount_minor_units,
+        splitWithUserIds,
+      },
+      ...prev,
+    ]);
+  };
 
   const isPerson = viewMode === "person";
   const multiplier = isPerson ? 0.5 : 1.0;
@@ -59,8 +91,6 @@ export function StitchBudgetView({
     const finalMinor = Math.round(converted.converted_amount_minor * multiplier);
     return formatMinorUnits(finalMinor, displayCurrency);
   };
-
-  const hasCustomItems = Boolean(dbLineItems && dbLineItems.length > 0);
 
   const getCategoryIcon = (cat: string) => {
     const c = cat.toLowerCase();
@@ -90,109 +120,32 @@ export function StitchBudgetView({
     }
   };
 
-  const lineItems = hasCustomItems && dbLineItems
-    ? dbLineItems.map((item) => {
-        const prov = getProvenanceMeta(item.evidence_type);
-        const amt = Number(item.amount_minor_units || 0) / 100;
-        return {
-          id: item.id,
-          title: item.title,
-          sub: `${item.category} • ${item.source_name || "Internal calculation"}`,
-          ref: item.evidence_type,
-          icon: getCategoryIcon(item.category),
-          provenance: prov.label,
-          provenanceBadge: prov.badge,
-          provenanceIcon: prov.icon,
-          status: item.is_paid ? "Paid" : "Planned",
-          statusBadge: item.is_paid ? "bg-tertiary-fixed-dim/40 text-tertiary" : "bg-surface-container-highest text-on-surface-variant",
-          amount: amt,
-          paxAmount: amt / 2,
-        };
-      })
-    : [
-        {
-          id: "flights",
-          title: "Flights: SFO ⇄ HND Roundtrip",
-          sub: "United Airlines • UA875 / UA876 • 2 Passengers economy",
-          ref: "PNR #9X4KL2 Confirmed",
-          icon: "flight",
-          provenance: "Live Quote",
-          provenanceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-          provenanceIcon: "bolt",
-          status: "Paid",
-          statusBadge: "bg-tertiary-fixed-dim/40 text-tertiary",
-          amount: 1840.0,
-          paxAmount: 920.0,
-        },
-        {
-          id: "hotel",
-          title: "Accommodation (3 Hotels, 9 Nights)",
-          sub: "Kyoto Granvia (4n), Tokyo Cerulean (5n) • 1 Queen Room",
-          ref: "Taxes ($142.00) & Kyoto City Bathing Tax included",
-          icon: "hotel",
-          provenance: "Live Quote",
-          provenanceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-          provenanceIcon: "bolt",
-          status: "Reserved (Pay at Desk)",
-          statusBadge: "bg-secondary-fixed text-on-secondary-fixed",
-          amount: 1620.0,
-          paxAmount: 810.0,
-        },
-        {
-          id: "food",
-          title: "Food & Daily Dining Allowance",
-          sub: "Model baseline: 9 Days • Mid-range culinary target",
-          ref: "Disclosed formula: $40.00 / day / person ($80.00 / group / day)",
-          icon: "restaurant",
-          provenance: "Calculated Estimate",
-          provenanceBadge: "bg-secondary-fixed text-on-secondary-fixed",
-          provenanceIcon: "calculate",
-          status: "Scheduled Plan",
-          statusBadge: "bg-surface-container-highest text-on-surface-variant",
-          amount: 720.0,
-          paxAmount: 360.0,
-        },
-        {
-          id: "activities",
-          title: "Activities & Guided Attractions",
-          sub: "teamLab Planets, Shibuya Sky VIP, Gion Tea Ceremony",
-          ref: "Published ticket prices across official agency gates",
-          icon: "attractions",
-          provenance: "Published Tariff",
-          provenanceBadge: "bg-primary-fixed text-on-primary-fixed",
-          provenanceIcon: "menu_book",
-          status: "Pre-paid (Vouchers)",
-          statusBadge: "bg-tertiary-fixed-dim/40 text-tertiary",
-          amount: 390.0,
-          paxAmount: 195.0,
-        },
-        {
-          id: "transport",
-          title: "Local Transport & Shinkansen Bullet Train",
-          sub: "Tokaido Shinkansen (Tokyo ⇄ Kyoto) + Suica Card Preloads",
-          ref: "Official JR Central fare bracket & Metro IC integration",
-          icon: "train",
-          provenance: "Published Tariff",
-          provenanceBadge: "bg-primary-fixed text-on-primary-fixed",
-          provenanceIcon: "menu_book",
-          status: "Tickets Staged",
-          statusBadge: "bg-secondary-fixed text-on-secondary-fixed",
-          amount: 280.0,
-          paxAmount: 140.0,
-        },
-      ];
+  const baseItems: DbLineItem[] = dbLineItems || [];
 
-  const activeItems: BudgetLineItemLike[] = hasCustomItems && dbLineItems
-    ? dbLineItems
-    : [
-        { amount_minor_units: 184000, evidence_type: "live_quote" },
-        { amount_minor_units: 162000, evidence_type: "live_quote" },
-        { amount_minor_units: 72000, evidence_type: "calculated_estimate" },
-        { amount_minor_units: 39000, evidence_type: "published_price" },
-        { amount_minor_units: 28000, evidence_type: "published_price" },
-      ];
+  const currentItems: DbLineItem[] = [...recordedExpenses, ...baseItems];
 
-  const totals = calculateBudgetTotals(activeItems, budgetLimitMinorUnits, 620000);
+  const lineItems = currentItems.map((item) => {
+    const prov = getProvenanceMeta(item.evidence_type);
+    const amt = Number(item.amount_minor_units || 0) / 100;
+    return {
+      id: item.id,
+      title: item.title,
+      sub: `${item.category} • ${item.source_name || "Internal calculation"}`,
+      ref: item.evidence_type || "Verified",
+      icon: getCategoryIcon(item.category),
+      provenance: prov.label,
+      provenanceBadge: prov.badge,
+      provenanceIcon: prov.icon,
+      status: item.is_paid ? "Paid" : "Planned",
+      statusBadge: item.is_paid
+        ? "bg-tertiary-fixed-dim/40 text-tertiary"
+        : "bg-surface-container-highest text-on-surface-variant",
+      amount: amt,
+      paxAmount: amt / 2,
+    };
+  });
+
+  const totals = calculateBudgetTotals(currentItems, budgetLimitMinorUnits, 620000);
   const totalAllocated = totals.totalAllocatedMajor;
   const tripLimit = totals.tripLimitMajor;
   const remainingRunway = totals.remainingRunwayMajor;
@@ -257,14 +210,11 @@ export function StitchBudgetView({
 
           <button
             type="button"
-            onClick={() => {
-              setExpenseNotice(true);
-              setTimeout(() => setExpenseNotice(false), 2500);
-            }}
+            onClick={() => setIsExpenseModalOpen(true)}
             className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
-            <span>{expenseNotice ? "Expense Modal Opened!" : "Record Direct Expense"}</span>
+            <span>Record Direct Expense</span>
           </button>
         </div>
       </div>
@@ -665,7 +615,31 @@ export function StitchBudgetView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-container-high/40">
-                  {lineItems.map((item) => (
+                  {lineItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-12 px-6 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
+                          <div className="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-on-surface">No expenses recorded yet</p>
+                            <p className="text-xs text-on-surface-variant mt-0.5">
+                              Record your first flight, stay, dining, or pass expense using the button above.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsExpenseModalOpen(true)}
+                            className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            + Record Direct Expense
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    lineItems.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-surface-container-high/40 transition-colors"
@@ -724,7 +698,8 @@ export function StitchBudgetView({
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )))
+                  }
                 </tbody>
               </table>
             </div>
@@ -814,99 +789,26 @@ export function StitchBudgetView({
           </div>
         </div>
 
-        {/* Right Column: Group Split, Settlement Engine & Insights (4 cols) */}
+        {/* Right Column: Group Split & Debt Settlement Engine */}
         <div className="xl:col-span-4 flex flex-col gap-6">
-          <div className="bg-surface-container-low rounded-2xl p-6 shadow-2xs border border-surface-container-high/40 flex flex-col gap-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="size-8 rounded-lg bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
-                  <span className="material-symbols-outlined text-[18px]">
-                    balance
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-on-surface">
-                    Group Split &amp; Ledger
-                  </h3>
-                  <span className="text-[11px] text-on-surface-variant">
-                    2-Party Equal Share Allocation
-                  </span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface text-[11px] font-semibold">
-                50 / 50
-              </span>
-            </div>
-
-            {/* Traveler Shares */}
-            <div className="space-y-3">
-              {/* Elena */}
-              <div className="p-3.5 rounded-xl bg-surface-container flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="size-7 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center text-[10px] font-bold">
-                      ER
-                    </div>
-                    <span className="text-xs font-semibold text-on-surface">
-                      Elena Rostova (You)
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-tertiary">
-                    +${(totalAllocated * 0.128).toFixed(2)} Owed
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-on-surface-variant">
-                  <span>Target Share: {formatCurrency(totalAllocated / 2)}</span>
-                  <span className="font-semibold text-on-surface">Paid: {formatCurrency((totalAllocated / 2) + (totalAllocated * 0.128))}</span>
-                </div>
-              </div>
-
-              {/* Marcus */}
-              <div className="p-3.5 rounded-xl bg-surface-container flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="size-7 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[10px] font-bold">
-                      MT
-                    </div>
-                    <span className="text-xs font-semibold text-on-surface">
-                      Marcus Tanaka
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-secondary">
-                    -${(totalAllocated * 0.128).toFixed(2)} Due
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-on-surface-variant">
-                  <span>Target Share: {formatCurrency(totalAllocated / 2)}</span>
-                  <span className="font-semibold text-on-surface">Paid: {formatCurrency((totalAllocated / 2) - (totalAllocated * 0.128))}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Settle Action */}
-            <button
-              type="button"
-              onClick={() => {
-                setSettleNotice(true);
-                setTimeout(() => setSettleNotice(false), 2500);
-              }}
-              className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                send_money
-              </span>
-              <span>{settleNotice ? "Settlement Initiated!" : "Settle via Transfer"}</span>
-            </button>
-
-            <div className="flex items-center gap-2 text-[11px] text-on-surface-variant pt-2 border-t border-surface-container-high/40">
-              <span className="material-symbols-outlined text-[16px] text-tertiary">
-                verified
-              </span>
-              <span>Settlement balances auto-reconcile on card posting.</span>
-            </div>
-          </div>
+          <DebtSettlementCard
+            members={activeMembers}
+            expenses={sharedExpenses}
+            currency={displayCurrency}
+            onOpenRecordExpense={() => setIsExpenseModalOpen(true)}
+          />
         </div>
       </div>
+
+      {/* Record Expense Modal */}
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
+        tripId={tripId}
+        defaultCurrency={displayCurrency}
+        members={activeMembers}
+        onExpenseAdded={handleExpenseAdded}
+      />
     </div>
   );
 }

@@ -28,7 +28,7 @@ export default async function TripPackingPage(props: {
     end_date: string;
   } | null = null;
 
-  if (user && !tripId.startsWith("mock-")) {
+  if (user) {
     const { data: tripData } = await supabase
       .from("trips")
       .select("id, title, destination_name, start_date, end_date")
@@ -40,24 +40,13 @@ export default async function TripPackingPage(props: {
     }
   }
 
-  const isShowcase =
-    tripId.startsWith("mock-") ||
-    tripId === "kyoto-autumn-2025" ||
-    tripId === "default" ||
-    tripId === "autumn-kyoto-2026";
-
-  if (!trip && !isShowcase) {
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        tripId
-      );
-    if (isUuid) {
-      notFound();
-    }
+  // If trip not found in DB, return 404
+  if (!trip) {
+    notFound();
   }
 
-  const destination = trip?.destination_name || "Kyoto, Japan";
-  const tripTitle = trip?.title || "Kyoto & Tokyo Autumn Odyssey";
+  const destination = trip.destination_name || "Destination";
+  const tripTitle = trip.title || `Trip to ${destination}`;
   const initialItems = await getPackingItems(tripId);
 
   return (

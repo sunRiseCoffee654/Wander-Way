@@ -20,7 +20,7 @@ export default async function TripDetailPage(props: {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch trip if signed in or if tripId is a valid UUID
+  // Fetch trip from Supabase
   let trip = null;
   if (user) {
     const { data } = await supabase
@@ -31,14 +31,9 @@ export default async function TripDetailPage(props: {
     trip = data;
   }
 
-  // If not found in DB and not a showcase route, fallback or notFound
-  const isShowcase = tripId === "kyoto-autumn-2025" || tripId === "default";
-  if (!trip && !isShowcase) {
-    // Check if tripId is a UUID
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tripId);
-    if (isUuid) {
-      notFound();
-    }
+  // If trip doesn't exist in database, return 404
+  if (!trip) {
+    notFound();
   }
 
   // Fetch pending proposals
@@ -61,8 +56,8 @@ export default async function TripDetailPage(props: {
     .eq("trip_id", tripId)
     .order("day_number", { ascending: true });
 
-  const tripTitle = trip?.title || "Autumn in Kyoto & Tokyo";
-  const tripDestination = trip?.destination || "Kyoto, Japan";
+  const tripTitle = trip.title || `Trip to ${trip.destination}`;
+  const tripDestination = trip.destination || "Destination";
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto flex flex-col gap-4">
@@ -91,7 +86,7 @@ export default async function TripDetailPage(props: {
         </div>
       )}
 
-      {/* Main Itinerary Client View (Days Selector + 60/40 Split + SVG Topology Map) */}
+      {/* Main Itinerary Client View (Days Selector + 60/40 Split + Vector Map) */}
       <ItineraryClientView
         tripId={tripId}
         tripTitle={tripTitle}

@@ -41,22 +41,16 @@ export default async function TripVaultPage(props: {
     }
   }
 
-  const isShowcase = tripId === "kyoto-autumn-2025" || tripId === "default";
-  if (!trip && !isShowcase) {
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        tripId
-      );
-    if (isUuid) {
-      notFound();
-    }
+  // If trip not found in DB, return 404
+  if (!trip) {
+    notFound();
   }
 
   return (
     <StitchVaultView
-      tripTitle={trip?.title || "Kyoto & Tokyo Autumn Journey 2025"}
+      tripTitle={trip.title || `Trip to ${trip.destination}`}
       tripId={tripId}
-      destination={trip?.destination || "Kyoto, Japan"}
+      destination={trip.destination || "Destination"}
       dbDocuments={documents || []}
     />
   );

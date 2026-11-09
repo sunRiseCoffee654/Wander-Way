@@ -12,15 +12,17 @@ interface StitchSidebarProps {
 }
 
 export function StitchSidebar({
-  currentTripTitle = "Kyoto & Tokyo",
-  activeTripId = "kyoto-autumn-2025",
+  currentTripTitle = "Plan a Journey",
+  activeTripId,
 }: StitchSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isGroupTalkOpen, setIsGroupTalkOpen] = useState(false);
 
   const itineraryHref = (activeTripId ? `/trips/${activeTripId}` : "/trips") as Route;
+  const bookingsHref = (activeTripId ? `/trips/${activeTripId}/bookings` : "/trips") as Route;
   const budgetHref = (activeTripId ? `/trips/${activeTripId}/budget` : "/budget") as Route;
+  const intelligenceHref = (activeTripId ? `/trips/${activeTripId}/intelligence` : "/vault") as Route;
   const vaultHref = (activeTripId ? `/trips/${activeTripId}/vault` : "/vault") as Route;
   const packingHref = (activeTripId ? `/trips/${activeTripId}/packing` : "/packing") as Route;
 
@@ -52,7 +54,15 @@ export function StitchSidebar({
         pathname !== "/trips/new" &&
         !pathname.includes("/budget") &&
         !pathname.includes("/vault") &&
-        !pathname.includes("/packing"),
+        !pathname.includes("/packing") &&
+        !pathname.includes("/bookings") &&
+        !pathname.includes("/intelligence"),
+    },
+    {
+      href: bookingsHref,
+      label: "Bookings & Passes",
+      icon: "confirmation_number",
+      isActive: pathname.includes("/bookings"),
     },
     {
       href: packingHref,
@@ -67,9 +77,15 @@ export function StitchSidebar({
       isActive: pathname.includes("/budget"),
     },
     {
-      href: vaultHref,
+      href: intelligenceHref,
       label: "Live Travel Intel",
       icon: "verified",
+      isActive: pathname.includes("/intelligence"),
+    },
+    {
+      href: vaultHref,
+      label: "Document Vault",
+      icon: "lock",
       isActive: pathname.includes("/vault"),
     },
     {
@@ -251,7 +267,7 @@ export function StitchSidebar({
 
       {/* Group Talk Slide-Out Drawer & Video Room */}
       <GroupTalkDrawer
-        tripId={activeTripId}
+        tripId={activeTripId || "default"}
         tripTitle={currentTripTitle}
         isOpen={isGroupTalkOpen}
         onClose={() => setIsGroupTalkOpen(false)}

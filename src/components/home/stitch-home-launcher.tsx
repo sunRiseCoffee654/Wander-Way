@@ -25,41 +25,6 @@ interface StitchHomeLauncherProps {
   dbTrips?: TripSummary[] | null;
 }
 
-const DEMO_SAVED_TRIPS: TripSummary[] = [
-  {
-    id: "kyoto-autumn-2025",
-    title: "Kyoto & Tokyo Autumn Journey",
-    destination: "Kyoto, Japan",
-    start_date: "2025-10-14",
-    end_date: "2025-10-24",
-    traveler_count: 2,
-    status: "active",
-  },
-  {
-    id: "dolomites-2025",
-    title: "Dolomites Summer Hike",
-    destination: "Cortina d'Ampezzo, Italy",
-    start_date: "2025-07-08",
-    end_date: "2025-07-15",
-    traveler_count: 4,
-    status: "completed",
-  },
-  {
-    id: "amalfi-2025",
-    title: "Amalfi Coast Getaway",
-    destination: "Positano, Italy",
-    start_date: "2025-05-12",
-    end_date: "2025-05-18",
-    traveler_count: 2,
-    status: "draft",
-  },
-];
-
-/**
- * Delimiter-aware parser for Party & Budget input in Home Launcher.
- * Safely extracts travelers count and budget without regex overlap.
- * Uses "·" delimiter when present, with graceful fallback for alternative delimiters or un-delimited input.
- */
 export function parsePartyAndBudget(
   partyBudget: string,
   fallbackTravelers = 2,
@@ -137,8 +102,8 @@ export function parsePartyAndBudget(
 
 export function StitchHomeLauncher({
   userEmail,
-  userName = "Elena Rostova",
-  userAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuDMWXf_SGnMNfpSWsO5--Xq6IkevaA58P9MR7YNK3sxkBpoMk3dawGJjMEs_RuTKN5eQy8E0jC5tMsSQSqbk7v0NKv_oybkYjg2cBI8WaUv4w2XXVRtbEs6jq9-iqRj_ErSflvyagYfCCjjCp24j__KR74LY8TsrdMz8c4Sot6IJQjv-VW32hzSvlJPkVgPAKMfYFsyJKtDDP0Jc1lRUowhQWk4kULIB1fDKrnNkYZe",
+  userName = "Traveler",
+  userAvatar,
   dbTrips,
 }: StitchHomeLauncherProps) {
   const router = useRouter();
@@ -166,9 +131,8 @@ export function StitchHomeLauncher({
   const [searchQuery, setSearchQuery] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
-  // Combine user database trips with demo trips
-  const activeTrips: TripSummary[] =
-    dbTrips && dbTrips.length > 0 ? dbTrips : DEMO_SAVED_TRIPS;
+  // Active trips from user database
+  const activeTrips: TripSummary[] = dbTrips || [];
 
   const handleQuickPlan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,14 +158,14 @@ export function StitchHomeLauncher({
   };
 
   const handleSelectJourney = (journeyTitle: string) => {
-    setFeedbackMessage(`Loaded template "${journeyTitle}". Customizing verified routes & transit connections...`);
+    setFeedbackMessage(`Loaded destination "${journeyTitle}". Creating verified itinerary workspace...`);
+    const params = new URLSearchParams();
+    params.set("dest", journeyTitle);
+    params.set("budget", "75000");
+    params.set("party", "2");
     setTimeout(() => {
-      if (journeyTitle.includes("Kyoto")) {
-        router.push("/trips/kyoto-autumn-2025" as Route);
-      } else {
-        router.push("/explore" as Route);
-      }
-    }, 900);
+      router.push(`/trips/new?${params.toString()}` as Route);
+    }, 700);
   };
 
   return (
@@ -297,7 +261,12 @@ export function StitchHomeLauncher({
                 </div>
 
                 <div className="flex flex-col gap-2 max-h-72 overflow-y-auto">
-                  {activeTrips.map((trip) => {
+                  {activeTrips.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-on-surface-variant">
+                      No saved trips yet. Start planning above to create your first journey.
+                    </div>
+                  ) : (
+                    activeTrips.map((trip) => {
                     const status = trip.status || "active";
                     const isCompleted = status === "completed";
                     const isDraft = status === "draft";
@@ -335,7 +304,7 @@ export function StitchHomeLauncher({
                         </span>
                       </Link>
                     );
-                  })}
+                  }))}
                 </div>
 
                 {/* Workspace Note */}

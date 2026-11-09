@@ -32,9 +32,9 @@ export default async function GlobalPackingPage() {
     trip = data;
   }
 
-  const tripId = trip?.id || "mock-kyoto-autumn-2026";
-  const destination = trip?.destination_name || "Kyoto, Japan";
-  const tripTitle = trip?.title || "Kyoto & Tokyo Autumn Odyssey";
+  const tripId = trip?.id || "default";
+  const destination = trip?.destination_name || "Destination";
+  const tripTitle = trip?.title || "Smart Packing & Gear";
   const initialItems = await getPackingItems(tripId);
 
   return (

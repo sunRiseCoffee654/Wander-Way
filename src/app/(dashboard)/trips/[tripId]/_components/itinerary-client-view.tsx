@@ -19,6 +19,14 @@ import {
 import { cacheItineraryOffline } from "@/lib/offline/storage";
 import { useOfflineStatus } from "@/lib/offline/use-offline";
 import type { WaypointItem, TransitLegItem } from "@/lib/itinerary/transit-geometry";
+import { ActivityEditModal } from "@/components/itinerary/activity-edit-modal";
+import {
+  createActivityAction,
+  updateActivityAction,
+  deleteActivityAction,
+  reorderActivitiesAction,
+  type Activity,
+} from "@/lib/itinerary/actions";
 
 type ItineraryDayWithActivities = Database["public"]["Tables"]["itinerary_days"]["Row"] & {
   itinerary_activities: Database["public"]["Tables"]["itinerary_activities"]["Row"][];
@@ -31,562 +39,82 @@ interface ItineraryClientViewProps {
   dbDays: ItineraryDayWithActivities[];
 }
 
-interface ShowcaseActivity {
-  id: string;
-  step: number;
-  time: string;
-  title: string;
-  category: string;
-  categoryType: string;
-  evidence: string;
-  evidenceBadge: string;
-  description: string;
-  duration: string;
-  cost: string;
-  curatorNote?: string;
-  location?: string;
-  isAiSuggestion?: boolean;
-}
-
-interface ShowcaseTransit {
-  id: string;
-  icon: string;
-  title: string;
-  badge: string;
-  sub: string;
-  cost: string;
-  statusIcon: string;
-}
-
-interface ShowcaseDayData {
-  title: string;
-  meta: string;
-  statusBadge: string;
-  activities: ShowcaseActivity[];
-  transits: ShowcaseTransit[];
-  mapWaypoints: Array<{ id: string; label: string; x: string; y: string; lat: number; lng: number; isAi?: boolean }>;
-  transitKm: string;
-  transitMins: string;
-}
-
-const SHOWCASE_SCHEDULES: Record<number, ShowcaseDayData> = {
-  1: {
-    title: "Arrival at Haneda & Shinjuku Nightscape",
-    meta: "3 stops scheduled • SFO JL 001 touch down • 18.2 km movement",
-    statusBadge: "Arrival Smooth",
-    transitKm: "18.2 km",
-    transitMins: "55 mins",
-    mapWaypoints: [
-      { id: "1", label: "Haneda Airport (HND)", x: "22%", y: "78%", lat: 35.5494, lng: 139.7798 },
-      { id: "2", label: "Hotel Cerulean Shinjuku", x: "48%", y: "42%", lat: 35.6895, lng: 139.6917 },
-      { id: "3", label: "Omoide Yokocho", x: "58%", y: "30%", lat: 35.6931, lng: 139.6998 },
-    ],
-    transits: [
-      {
-        id: "t1",
-        icon: "directions_subway",
-        title: "Tokyo Monorail & Yamanote Line • HND to Shinjuku",
-        badge: "Official Schedule",
-        sub: "35 mins • IC card tap (Suica/Pasmo) • Platform 1",
-        cost: "¥660 (~$4.50)",
-        statusIcon: "check_circle",
-      },
-      {
-        id: "t2",
-        icon: "directions_walk",
-        title: "Evening Walk • Hotel to Omoide Yokocho",
-        badge: "Pedestrian",
-        sub: "12 mins • 800m through neon corridors",
-        cost: "Free",
-        statusIcon: "navigation",
-      },
-    ],
-    activities: [
-      {
-        id: "d1-1",
-        step: 1,
-        time: "03:15 PM",
-        title: "Haneda International Arrival & Pocket Wi-Fi Pickup",
-        category: "Transit / Welcome",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Live Quote",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "Clear customs at Terminal 3, collect Japan Rail Pass exchange vouchers and Ninja Wi-Fi router counter.",
-        duration: "Duration: 1h 00m",
-        cost: "Pre-paid",
-        location: "Terminal 3 Arrival Lobby",
-      },
-      {
-        id: "d1-2",
-        step: 2,
-        time: "05:00 PM",
-        title: "Check-in at Tokyo Boutique Hotel & Refresh",
-        category: "Lodging",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Live Quote",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "Unpack luggage, change into light evening layers, and survey city skyline views over Shinjuku.",
-        duration: "Duration: 1h 30m",
-        cost: "Covered by Booking",
-        location: "Cerulean Tower Shinjuku",
-      },
-      {
-        id: "d1-3",
-        step: 3,
-        time: "07:30 PM",
-        title: "Dinner & Lantern Stroll at Omoide Yokocho",
-        category: "Dining / Nightlife",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Calculated Estimate",
-        evidenceBadge: "bg-secondary-fixed text-on-secondary-fixed",
-        description: "Atmospheric post-war alleyway serving binchotan-grilled yakitori skewers and draft Sapporo beer.",
-        duration: "Duration: 2h 00m",
-        cost: "Pay on site (~¥3,500)",
-        location: "Shinjuku West Exit",
-      },
-    ],
-  },
-  2: {
-    title: "Kyoto Heritage, Shrines & Culinary Lane",
-    meta: "4 stops scheduled • 1 pending confirmation • 7.4 km total movement",
-    statusBadge: "Schedule Balanced",
-    transitKm: "7.4 km",
-    transitMins: "47 mins",
-    mapWaypoints: [
-      { id: "1", label: "Nishiki Market", x: "18%", y: "28%", lat: 35.0050, lng: 135.7649 },
-      { id: "2", label: "Fushimi Inari", x: "52%", y: "74%", lat: 34.9671, lng: 135.7727 },
-      { id: "3", label: "Gion Karyo", x: "64%", y: "39%", lat: 35.0022, lng: 135.7760 },
-      { id: "4", label: "Kiyomizu (AI)", x: "82%", y: "52%", lat: 34.9949, lng: 135.7850, isAi: true },
-      { id: "5", label: "Pontocho", x: "44%", y: "25%", lat: 35.0055, lng: 135.7712 },
-    ],
-    transits: [
-      {
-        id: "t1",
-        icon: "directions_walk",
-        title: "Walking 850m • 12 mins via Shijo-dori",
-        badge: "Sourced Map Route",
-        sub: "toward Gion-Shijo / Keihan Line",
-        cost: "Free",
-        statusIcon: "navigation",
-      },
-      {
-        id: "t2",
-        icon: "train",
-        title: "JR Nara Line Train • Inari Stn to Tofukuji / Gion Transfer",
-        badge: "Official Schedule",
-        sub: "15 mins in transit • Frequency: Every 10 mins • Track 2 Direction Kyoto",
-        cost: "¥150 (~$1.05)",
-        statusIcon: "check_circle",
-      },
-      {
-        id: "t3",
-        icon: "local_taxi",
-        title: "Taxi / Rideshare estimate • Higashiyama to Pontocho",
-        badge: "Calculated Estimate",
-        sub: "Disclosed: 3.2km @ local standard daytime rate • 10 mins",
-        cost: "¥1,800 (~$12.50)",
-        statusIcon: "info",
-      },
-    ],
-    activities: [
-      {
-        id: "d2-1",
-        step: 1,
-        time: "08:30 AM",
-        title: "Breakfast at Nishiki Market",
-        category: "Food / Culture",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "User Entered",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Explore morning street vendors for freshly grilled dashi tamagoyaki, matcha warabi mochi, and artisanal tsukemono.",
-        duration: "Duration: 1h 15m",
-        cost: "Pay on site (~¥1,200)",
-        location: "Nakagyo Ward, Kyoto",
-      },
-      {
-        id: "d2-2",
-        step: 2,
-        time: "10:00 AM",
-        title: "Fushimi Inari Taisha Shrine",
-        category: "Priority Star",
-        categoryType: "bg-secondary-fixed text-on-secondary-fixed font-semibold",
-        evidence: "Published Tariff",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "Hike beneath thousands of vermilion torii gates winding up the sacred Mount Inari trail.",
-        duration: "Duration: 2h 30m",
-        cost: "Free Admission [Published]",
-        curatorNote: "Arrive before peak crowds. The Senbon Torii path clears up 40% after the first quarter mile up to Yotsutsuji intersection.",
-        location: "Fushimi Ward, Kyoto • GPS: 34.9671° N, 135.7727° E",
-      },
-      {
-        id: "d2-3",
-        step: 3,
-        time: "01:15 PM",
-        title: "Traditional Kaiseki Lunch at Gion Karyo",
-        category: "Booking Confirmed: Res #GK-9821",
-        categoryType: "bg-tertiary-fixed text-on-tertiary-fixed font-semibold",
-        evidence: "Live Quote",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "10-course seasonal lunch menu highlighting local matsutake broth, seasonal sashimi, and clay-pot cooked rice in a preserved machiya.",
-        duration: "Duration: 1h 45m",
-        cost: "¥7,500 ($52.00) [Live Quote]",
-        location: "Gion historic quarter",
-      },
-      {
-        id: "d2-4",
-        step: 4,
-        time: "03:00 PM",
-        title: "Kiyomizu-dera Temple & Higashiyama Stroll",
-        category: "AI Draft Suggestion",
-        categoryType: "bg-secondary-fixed text-on-secondary-fixed font-semibold",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Walk through Ninenzaka & Sannenzaka historic slopes leading up to the grand wooden stage with panoramic Kyoto foliage views.",
-        duration: "Est. 1h 45m",
-        cost: "¥400 general entry",
-        isAiSuggestion: true,
-        location: "Higashiyama Ward, Kyoto",
-      },
-      {
-        id: "d2-5",
-        step: 5,
-        time: "06:30 PM",
-        title: "Pontocho Alley Evening Walk & Dinner",
-        category: "Nightlife / Dining",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Calculated Estimate",
-        evidenceBadge: "bg-secondary-fixed text-on-secondary-fixed",
-        description: "Atmospheric pedestrian lantern street bordering the Kamogawa River. Drop into local Yakitori or craft sake spots along the canal.",
-        duration: "Open Evening Window (~2h 00m)",
-        cost: "Pay on site (~¥4,000)",
-        location: "Kamogawa River Boardwalk",
-      },
-    ],
-  },
-  3: {
-    title: "Nozomi Shinkansen & Arashiyama Bamboo",
-    meta: "3 stops scheduled • Tokaido Bullet Train • 12.8 km movement",
-    statusBadge: "Transit On Track",
-    transitKm: "12.8 km",
-    transitMins: "38 mins",
-    mapWaypoints: [
-      { id: "1", label: "Kyoto Stn Shinkansen", x: "32%", y: "70%", lat: 34.9858, lng: 135.7588 },
-      { id: "2", label: "Tenryu-ji Temple", x: "65%", y: "35%", lat: 35.0158, lng: 135.6776 },
-      { id: "3", label: "Arashiyama Bamboo Grove", x: "78%", y: "24%", lat: 35.0169, lng: 135.6713 },
-    ],
-    transits: [
-      {
-        id: "t1",
-        icon: "train",
-        title: "JR San-in Line • Kyoto Station to Saga-Arashiyama",
-        badge: "JR Pass Included",
-        sub: "16 mins rapid transit • Track 32 departure",
-        cost: "¥240 (Included)",
-        statusIcon: "check_circle",
-      },
-    ],
-    activities: [
-      {
-        id: "d3-1",
-        step: 1,
-        time: "09:00 AM",
-        title: "Morning Transit to Arashiyama Foothills",
-        category: "Scenic Rail",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Published Tariff",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Board scenic local train west toward the Hozu River and mountains.",
-        duration: "Duration: 40m",
-        cost: "JR Pass Sourced",
-        location: "Saga-Arashiyama Station",
-      },
-      {
-        id: "d3-2",
-        step: 2,
-        time: "10:15 AM",
-        title: "Tenryu-ji World Heritage Zen Temple & Garden",
-        category: "Heritage / Nature",
-        categoryType: "bg-secondary-fixed text-on-secondary-fixed font-semibold",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "14th-century landscape garden reflecting autumn colors across Sogenchi Pond with mountain backdrops.",
-        duration: "Duration: 1h 30m",
-        cost: "¥500 entry",
-        location: "Tenryu-ji Main Compound",
-      },
-      {
-        id: "d3-3",
-        step: 3,
-        time: "12:00 PM",
-        title: "Arashiyama Bamboo Grove & Togetsukyo Bridge",
-        category: "Iconic Walk",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Published Price",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "Immersive soaring green stalks corridor leading into the tranquil residential village and riverbank.",
-        duration: "Duration: 2h 00m",
-        cost: "Free Access",
-        location: "Arashiyama Bamboo Pathway",
-      },
-    ],
-  },
-  4: {
-    title: "Gion Cultural Heart & Machiya Tea Ceremony",
-    meta: "3 stops scheduled • Reservation Required • 4.6 km movement",
-    statusBadge: "Action Needed",
-    transitKm: "4.6 km",
-    transitMins: "25 mins",
-    mapWaypoints: [
-      { id: "1", label: "Kodai-ji Temple", x: "42%", y: "45%", lat: 35.0003, lng: 135.7812 },
-      { id: "2", label: "Tea Ceremony Machiya", x: "60%", y: "48%", lat: 35.0015, lng: 135.7745 },
-      { id: "3", label: "Philosophers Path", x: "85%", y: "22%", lat: 35.0272, lng: 135.7955 },
-    ],
-    transits: [
-      {
-        id: "t1",
-        icon: "directions_walk",
-        title: "Walking • Kodai-ji to Tea House via Ishibe-koji",
-        badge: "Pedestrian Alley",
-        sub: "8 mins • Preserved flagstone lane",
-        cost: "Free",
-        statusIcon: "navigation",
-      },
-    ],
-    activities: [
-      {
-        id: "d4-1",
-        step: 1,
-        time: "09:30 AM",
-        title: "Kodai-ji Zen Temple & Rock Garden",
-        category: "Culture",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Tranquil hillside temple founded in 1606, featuring bamboo grove and raked dry landscape gravel gardens.",
-        duration: "Duration: 1h 30m",
-        cost: "¥600 admission",
-        location: "Higashiyama, Kyoto",
-      },
-      {
-        id: "d4-2",
-        step: 2,
-        time: "11:30 AM",
-        title: "Private Machiya Urasenke Tea Ceremony",
-        category: "Action Needed • Slot Unreserved",
-        categoryType: "bg-secondary-fixed text-on-secondary-fixed font-semibold",
-        evidence: "Live Quote",
-        evidenceBadge: "bg-secondary-fixed text-on-secondary-fixed",
-        description: "Authentic tea preparation ritual with tea master explaining etiquette, seasonal confections (wagashi), and philosophy.",
-        duration: "Duration: 1h 15m",
-        cost: "¥4,500 ($31.00) [Live Quote]",
-        curatorNote: "Booking pending. Only 4 morning places remaining for this time slot.",
-        location: "Gion Shirakawa preservation district",
-      },
-      {
-        id: "d4-3",
-        step: 3,
-        time: "02:30 PM",
-        title: "Philosopher's Path Canal Stroll",
-        category: "Scenic Nature",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Published Price",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "Stone path following a cherry tree-lined canal between Ginkaku-ji and Nanzen-ji temples.",
-        duration: "Duration: 2h 00m",
-        cost: "Free Access",
-        location: "Sakyo Ward, Kyoto",
-      },
-    ],
-  },
-  5: {
-    title: "Northern Kyoto & Golden Pavilion",
-    meta: "3 stops scheduled • Zen Architecture • 9.1 km movement",
-    statusBadge: "Verified Schedule",
-    transitKm: "9.1 km",
-    transitMins: "35 mins",
-    mapWaypoints: [
-      { id: "1", label: "Kinkaku-ji (Golden Pavilion)", x: "35%", y: "20%", lat: 35.0394, lng: 135.7292 },
-      { id: "2", label: "Ryoan-ji Rock Garden", x: "24%", y: "26%", lat: 35.0345, lng: 135.7182 },
-      { id: "3", label: "Daitoku-ji Compound", x: "50%", y: "15%", lat: 35.0436, lng: 135.7441 },
-    ],
-    transits: [
-      {
-        id: "t1",
-        icon: "directions_bus",
-        title: "Kyoto City Bus 205 • Kinkaku-ji to Ryoan-ji",
-        badge: "City Transit",
-        sub: "8 mins in transit • IC Card accepted",
-        cost: "¥230",
-        statusIcon: "check_circle",
-      },
-    ],
-    activities: [
-      {
-        id: "d5-1",
-        step: 1,
-        time: "09:00 AM",
-        title: "Kinkaku-ji (The Golden Pavilion)",
-        category: "World Heritage",
-        categoryType: "bg-primary-fixed text-on-primary-fixed font-semibold",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Two-story gold-leaf pavilion mirrored over the tranquil waters of Kyoko-chi (Mirror Pond).",
-        duration: "Duration: 1h 15m",
-        cost: "¥500 entry",
-        location: "Kita Ward, Kyoto",
-      },
-      {
-        id: "d5-2",
-        step: 2,
-        time: "10:45 AM",
-        title: "Ryoan-ji Famous Dry Landscape Garden",
-        category: "Zen Meditation",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Fifteen mysterious rocks arranged in white raked sand, designed so that only 14 can be seen from any vantage point.",
-        duration: "Duration: 1h 00m",
-        cost: "¥600 admission",
-        location: "Ryoanji Goryonoshitacho",
-      },
-      {
-        id: "d5-3",
-        step: 3,
-        time: "01:00 PM",
-        title: "Shojin Ryori Zen Vegetarian Lunch at Daitoku-ji",
-        category: "Culinary Tradition",
-        categoryType: "bg-tertiary-fixed text-on-tertiary-fixed font-semibold",
-        evidence: "Live Quote",
-        evidenceBadge: "bg-tertiary-fixed text-on-tertiary-fixed",
-        description: "Traditional Buddhist temple cuisine served in lacquered bowls with seasonal sesame tofu, lotus root, and simmered greens.",
-        duration: "Duration: 1h 30m",
-        cost: "¥4,200 ($29.00)",
-        location: "Izusen Daitoku-ji Compound",
-      },
-    ],
-  },
-  6: {
-    title: "Nara Deer Park & Ancient Temples",
-    meta: "3 stops scheduled • Day Trip Departure • 22.4 km movement",
-    statusBadge: "Day Trip Active",
-    transitKm: "22.4 km",
-    transitMins: "50 mins",
-    mapWaypoints: [
-      { id: "1", label: "JR Nara Stn", x: "50%", y: "82%", lat: 34.6812, lng: 135.8197 },
-      { id: "2", label: "Todai-ji Great Buddha", x: "65%", y: "45%", lat: 34.6890, lng: 135.8398 },
-      { id: "3", label: "Nara Deer Park", x: "72%", y: "58%", lat: 34.6851, lng: 135.8430 },
-    ],
-    transits: [
-      {
-        id: "t1",
-        icon: "train",
-        title: "JR Miyakoji Rapid • Kyoto Stn to Nara Stn",
-        badge: "Express Transit",
-        sub: "45 mins rapid train • JR Pass valid",
-        cost: "¥720 (Included)",
-        statusIcon: "check_circle",
-      },
-    ],
-    activities: [
-      {
-        id: "d6-1",
-        step: 1,
-        time: "09:30 AM",
-        title: "Todai-ji Temple & The Great Bronze Buddha (Daibutsu)",
-        category: "World Heritage",
-        categoryType: "bg-primary-fixed text-on-primary-fixed font-semibold",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "One of the world's largest wooden buildings housing the towering 15-meter bronze Buddha statue cast in 752 AD.",
-        duration: "Duration: 2h 00m",
-        cost: "¥600 admission",
-        location: "Zoshicho, Nara",
-      },
-      {
-        id: "d6-2",
-        step: 2,
-        time: "12:00 PM",
-        title: "Nara Deer Park Interaction & Shika Senbei",
-        category: "Wildlife / Nature",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "User Entered",
-        evidenceBadge: "bg-surface-container-highest text-on-surface",
-        description: "Over 1,000 gentle, bowing sika deer roaming freely under autumn maples and ancient cedars.",
-        duration: "Duration: 1h 30m",
-        cost: "¥200 deer crackers",
-        location: "Noborioji-cho, Nara",
-      },
-      {
-        id: "d6-3",
-        step: 3,
-        time: "02:30 PM",
-        title: "Kasuga Taisha Shrine & Lantern Paths",
-        category: "Shinto Shrine",
-        categoryType: "bg-surface-container-high text-on-surface-variant",
-        evidence: "Published Price",
-        evidenceBadge: "bg-primary-fixed text-on-primary-fixed",
-        description: "Forest sanctuary lined with over 3,000 stone and bronze lanterns, illuminated with ancient moss carpets.",
-        duration: "Duration: 1h 30m",
-        cost: "¥500 inner sanctuary",
-        location: "Kasugano-cho, Nara",
-      },
-    ],
-  },
-};
-
 export function ItineraryClientView({
   tripId,
   tripTitle,
   destination,
   dbDays,
 }: ItineraryClientViewProps) {
-  const hasCustomSchedule = Boolean(dbDays && dbDays.length > 0);
-  const defaultDay = hasCustomSchedule ? (dbDays[0]?.day_number || 1) : 2;
-  const [selectedDay, setSelectedDay] = useState<number>(defaultDay);
+  // Initialize days from dbDays, or provide clean default day 1 if empty
+  const initialDays = useMemo<ItineraryDayWithActivities[]>(() => {
+    if (dbDays && dbDays.length > 0) {
+      return dbDays;
+    }
+    return [
+      {
+        id: `day-${tripId}-1`,
+        trip_id: tripId,
+        day_number: 1,
+        calendar_date: new Date().toISOString().slice(0, 10),
+        title: "Day 1 Schedule",
+        notes: null,
+        created_at: new Date().toISOString(),
+        itinerary_activities: [],
+      },
+    ];
+  }, [dbDays, tripId]);
 
+  const [customDays, setCustomDays] = useState<ItineraryDayWithActivities[]>(initialDays);
+  const [selectedDay, setSelectedDay] = useState<number>(initialDays[0]?.day_number || 1);
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
-  const [aiSuggestionAccepted, setAiSuggestionAccepted] = useState(false);
-  const [aiSuggestionRemoved, setAiSuggestionRemoved] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(true);
   const [exportNotice, setExportNotice] = useState(false);
   const [groupTalkOpen, setGroupTalkOpen] = useState(false);
 
+  // Edit / Add Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalInitialData, setModalInitialData] = useState<Partial<Activity> | null>(null);
+  const [activityToDelete, setActivityToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const { isOffline } = useOfflineStatus(tripId);
+
+  // Sync customDays when dbDays changes during render without setState in effect
+  const [prevDbDays, setPrevDbDays] = useState(dbDays);
+  if (dbDays !== prevDbDays) {
+    setPrevDbDays(dbDays);
+    if (dbDays && dbDays.length > 0) {
+      setCustomDays(dbDays);
+    }
+  }
 
   // Auto-cache itinerary for PWA offline accessibility
   useEffect(() => {
     if (tripId) {
       cacheItineraryOffline(tripId, {
-        dbDays,
+        dbDays: customDays,
         tripTitle,
         destination,
         cachedDay: selectedDay,
       });
     }
-  }, [tripId, dbDays, tripTitle, destination, selectedDay]);
+  }, [tripId, customDays, tripTitle, destination, selectedDay]);
 
   // Build the day navigation tabs
-  const daysList = hasCustomSchedule
-    ? dbDays.map((d) => ({
-        dayNumber: d.day_number,
-        date: d.calendar_date
-          ? new Date(d.calendar_date).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            })
-          : `Day ${d.day_number}`,
-        weather: "19°C",
-        icon: "wb_sunny",
-        title: d.title || `Day ${d.day_number}`,
-      }))
-    : [
-        { dayNumber: 1, date: "Oct 14", weather: "17°C", icon: "cloud", title: "Arrival" },
-        { dayNumber: 2, date: "Oct 15 (Today)", weather: "18°C", icon: "wb_sunny", title: "Kyoto Heritage" },
-        { dayNumber: 3, date: "Oct 16", weather: "20°C", icon: "wb_sunny", title: "Arashiyama" },
-        { dayNumber: 4, date: "Oct 17", weather: "16°C", icon: "rainy", title: "Tea Ceremony" },
-        { dayNumber: 5, date: "Oct 18", weather: "19°C", icon: "wb_sunny", title: "Golden Pavilion" },
-        { dayNumber: 6, date: "Oct 19", weather: "21°C", icon: "wb_sunny", title: "Nara Day Trip" },
-      ];
+  const daysList = useMemo(() => {
+    return customDays.map((d) => ({
+      dayNumber: d.day_number,
+      date: d.calendar_date
+        ? new Date(d.calendar_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : `Day ${d.day_number}`,
+      weather: "20°C",
+      icon: "wb_sunny",
+      title: d.title || `Day ${d.day_number}`,
+    }));
+  }, [customDays]);
 
   const handleExport = () => {
     setExportNotice(true);
@@ -594,9 +122,9 @@ export function ItineraryClientView({
   };
 
   // Resolve current day's data
-  const currentDbDay = hasCustomSchedule
-    ? dbDays.find((d) => d.day_number === selectedDay) || dbDays[0]
-    : null;
+  const currentDbDay = useMemo(() => {
+    return customDays.find((d) => d.day_number === selectedDay) || customDays[0] || null;
+  }, [customDays, selectedDay]);
 
   const currentDbActivities = useMemo(() => {
     return currentDbDay?.itinerary_activities
@@ -604,51 +132,35 @@ export function ItineraryClientView({
       : [];
   }, [currentDbDay]);
 
-  const currentShowcase = SHOWCASE_SCHEDULES[selectedDay] || SHOWCASE_SCHEDULES[2];
   const getEvidenceBadge = getItineraryEvidenceBadge;
 
   // Extract waypoints for MapLibre GL vector map
   const currentWaypoints = useMemo<WaypointItem[]>(() => {
-    if (currentDbActivities.length > 0) {
-      return extractWaypointsFromActivities(currentDbActivities);
-    }
-    return currentShowcase.activities.map((act, idx) => {
-      const wp = currentShowcase.mapWaypoints[idx] || currentShowcase.mapWaypoints[0];
-      return {
-        id: act.id,
-        step: act.step,
-        title: act.title,
-        lat: wp.lat,
-        lng: wp.lng,
-        time: act.time,
-        category: act.category,
-        isAi: act.isAiSuggestion,
-      };
-    });
-  }, [currentDbActivities, currentShowcase]);
+    return extractWaypointsFromActivities(currentDbActivities);
+  }, [currentDbActivities]);
 
-  // Extract or compute transit legs
+  // Extract or compute transit legs between consecutive waypoints
   const currentTransitLegs = useMemo<TransitLegItem[]>(() => {
     const legs: TransitLegItem[] = [];
-    if (currentShowcase.transits.length > 0 && currentWaypoints.length > 1) {
+    if (currentWaypoints.length > 1) {
       for (let i = 0; i < currentWaypoints.length - 1; i++) {
         const from = currentWaypoints[i];
         const to = currentWaypoints[i + 1];
-        const t = currentShowcase.transits[i];
-        const mode = t?.icon?.includes("walk")
-          ? "walk"
-          : t?.title?.toLowerCase().includes("shinkansen")
-          ? "shinkansen"
-          : "metro";
+        const act = currentDbActivities[i];
+        const mode = act?.travel_mode_to_next === "transit"
+          ? "metro"
+          : act?.travel_mode_to_next === "drive"
+          ? "drive"
+          : "walk";
         legs.push({
           fromId: from.id,
           toId: to.id,
-          mode,
+          mode: mode as "walk" | "shinkansen" | "metro",
         });
       }
     }
     return legs;
-  }, [currentShowcase.transits, currentWaypoints]);
+  }, [currentDbActivities, currentWaypoints]);
 
   // Bi-directional selection handler: Focuses timeline card when map pin is clicked
   const handleSelectWaypoint = (activityId: string) => {
@@ -662,6 +174,156 @@ export function ItineraryClientView({
     }
   };
 
+  // Activity Lifecycle Handlers
+  const handleOpenAddModal = () => {
+    setModalInitialData(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModalForDb = (act: Activity) => {
+    setModalInitialData(act);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveActivity = async (data: Partial<Activity>) => {
+    const prevCustomDays = customDays;
+
+    try {
+      if (modalInitialData?.id) {
+        // Edit existing activity
+        const actId = modalInitialData.id;
+
+        // Optimistic UI update
+        setCustomDays((prev) =>
+          prev.map((d) => {
+            if (d.day_number !== selectedDay) return d;
+            return {
+              ...d,
+              itinerary_activities: d.itinerary_activities.map((a) =>
+                a.id === actId
+                  ? ({
+                      ...a,
+                      ...data,
+                      is_user_edited: true,
+                      updated_at: new Date().toISOString(),
+                    } as Activity)
+                  : a,
+              ),
+            };
+          }),
+        );
+
+        await updateActivityAction(actId, data);
+      } else {
+        // Add new activity
+        const dayId = currentDbDay?.id || `day-${selectedDay}`;
+        const result = await createActivityAction({
+          trip_id: tripId,
+          day_id: dayId,
+          title: data.title || "New Activity",
+          planned_time: data.planned_time,
+          duration_minutes: data.duration_minutes,
+          place_name: data.place_name,
+          place_category: data.place_category,
+          booking_requirement: data.booking_requirement,
+          description: data.description,
+          is_must_see: data.is_must_see,
+          latitude: data.latitude,
+          longitude: data.longitude,
+        });
+
+        const createdAct = result.activity || result.data;
+
+        setCustomDays((prev) =>
+          prev.map((d) => {
+            if (d.day_number !== selectedDay) return d;
+            return {
+              ...d,
+              itinerary_activities: [...d.itinerary_activities, createdAct],
+            };
+          }),
+        );
+      }
+    } catch (err) {
+      // Rollback on failure
+      setCustomDays(prevCustomDays);
+      setActionError(err instanceof Error ? err.message : "Failed to save activity.");
+      throw err;
+    }
+  };
+
+  const handleDeleteActivity = (activityId: string, title: string) => {
+    setActivityToDelete({ id: activityId, title });
+  };
+
+  const confirmDeleteActivity = async () => {
+    if (!activityToDelete) return;
+    const { id: activityId } = activityToDelete;
+    setActivityToDelete(null);
+
+    const prevCustomDays = customDays;
+
+    // Optimistic deletion
+    setCustomDays((prev) =>
+      prev.map((d) => {
+        if (d.day_number !== selectedDay) return d;
+        const filtered = d.itinerary_activities.filter((a) => a.id !== activityId);
+        return {
+          ...d,
+          itinerary_activities: filtered.map((a, idx) => ({
+            ...a,
+            sort_order: idx + 1,
+          })),
+        };
+      }),
+    );
+
+    try {
+      await deleteActivityAction(activityId);
+    } catch (err) {
+      // Rollback on failure
+      setCustomDays(prevCustomDays);
+      setActionError(err instanceof Error ? err.message : "Failed to delete activity.");
+    }
+  };
+
+  const handleMoveActivity = async (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    const prevCustomDays = customDays;
+
+    const acts = [...currentDbActivities];
+    if (targetIndex < 0 || targetIndex >= acts.length) return;
+    const temp = acts[index];
+    acts[index] = acts[targetIndex];
+    acts[targetIndex] = temp;
+
+    const orderedIds = acts.map((a) => a.id);
+    const dayId = currentDbDay?.id || `day-${selectedDay}`;
+
+    // Optimistic update
+    setCustomDays((prev) =>
+      prev.map((d) => {
+        if (d.day_number !== selectedDay) return d;
+        return {
+          ...d,
+          itinerary_activities: acts.map((a, idx) => ({
+            ...a,
+            sort_order: idx + 1,
+            is_user_edited: true,
+          })),
+        };
+      }),
+    );
+
+    try {
+      await reorderActivitiesAction(dayId, orderedIds);
+    } catch (err) {
+      // Rollback
+      setCustomDays(prevCustomDays);
+      setActionError(err instanceof Error ? err.message : "Failed to reorder activities.");
+    }
+  };
+
   return (
     <div className="flex flex-col w-full pb-16">
       {/* Sticky Day Selector Bar */}
@@ -672,7 +334,7 @@ export function ItineraryClientView({
               {tripTitle}
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
-              Day {selectedDay} Active{hasCustomSchedule ? " • Custom Plan" : ""} • {destination}
+              Day {selectedDay} Active • {destination}
             </span>
             {isOffline && (
               <span className="flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-semibold shadow-2xs">
@@ -683,6 +345,16 @@ export function ItineraryClientView({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/trips/${tripId}/map` as Route}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px] text-primary">
+                map
+              </span>
+              <span>Vector Map</span>
+            </Link>
+
             <Link
               href={`/trips/${tripId}/packing` as Route}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-colors"
@@ -696,7 +368,7 @@ export function ItineraryClientView({
             <button
               type="button"
               onClick={() => setGroupTalkOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 text-xs font-bold transition-all shadow-2xs"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >
               <span className="relative flex items-center justify-center">
                 <span className="material-symbols-outlined text-[18px]">forum</span>
@@ -708,7 +380,7 @@ export function ItineraryClientView({
             <button
               type="button"
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px] text-primary">
                 ios_share
@@ -719,7 +391,7 @@ export function ItineraryClientView({
             <button
               type="button"
               onClick={() => setOfflineSaved(!offlineSaved)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px] text-tertiary">
                 offline_pin
@@ -738,7 +410,7 @@ export function ItineraryClientView({
                 key={d.dayNumber}
                 type="button"
                 onClick={() => setSelectedDay(d.dayNumber)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shrink-0 text-xs cursor-pointer ${
                   isSelected
                     ? "bg-primary text-on-primary font-bold shadow-xs"
                     : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium"
@@ -775,19 +447,15 @@ export function ItineraryClientView({
             <div className="flex items-center gap-3">
               <div className="size-9 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
                 <span className="material-symbols-outlined text-[20px]">
-                  temple_buddhist
+                  explore
                 </span>
               </div>
               <div>
                 <h2 className="text-base text-on-surface font-semibold leading-tight">
-                  {hasCustomSchedule
-                    ? (currentDbDay?.title || `Day ${selectedDay} Schedule`)
-                    : currentShowcase.title}
+                  {currentDbDay?.title || `Day ${selectedDay} Schedule`}
                 </h2>
                 <p className="text-xs text-on-surface-variant mt-0.5">
-                  {hasCustomSchedule
-                    ? `${currentDbActivities.length} activities scheduled • Live GPS Grounded`
-                    : currentShowcase.meta}
+                  {currentDbActivities.length} activities scheduled • Live GPS Grounded
                 </p>
               </div>
             </div>
@@ -795,340 +463,221 @@ export function ItineraryClientView({
               <span className="material-symbols-outlined text-[16px] text-tertiary">
                 check_circle
               </span>
-              <span>{hasCustomSchedule ? "Database Synced" : currentShowcase.statusBadge}</span>
+              <span>Database Synced</span>
             </div>
           </div>
 
-          {/* DYNAMIC DATABASE ACTIVITIES (if present) */}
-          {hasCustomSchedule ? (
-            currentDbActivities.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-surface-container-lowest border border-surface-container-high/40 text-center flex flex-col items-center gap-3">
-                <span className="material-symbols-outlined text-[32px] text-on-surface-variant">
-                  calendar_today
-                </span>
-                <p className="text-sm text-on-surface-variant">
-                  No activities scheduled for Day {selectedDay} yet.
-                </p>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-semibold shadow-xs hover:bg-primary-container transition-colors"
-                >
-                  + Add First Activity
-                </button>
+          {/* Day Activities List or Clean Empty State */}
+          {currentDbActivities.length === 0 ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-surface-container-lowest border border-surface-container-high/40 text-center flex flex-col items-center justify-center gap-4">
+              <div className="size-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <span className="material-symbols-outlined text-[30px]">event_note</span>
               </div>
-            ) : (
-              currentDbActivities.map((act, idx) => {
-                const evidenceInfo = getEvidenceBadge(act.booking_requirement ? "published_price" : "calculated_estimate");
-                return (
+              <div className="max-w-md space-y-1">
+                <h3 className="text-base font-semibold text-on-surface">
+                  No activities scheduled for Day {selectedDay}
+                </h3>
+                <p className="text-xs text-on-surface-variant">
+                  Add your first landmark, museum, restaurant, or sightseeing stop for {destination}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                <span>+ Add First Activity</span>
+              </button>
+            </div>
+          ) : (
+            currentDbActivities.map((act, idx) => {
+              const evidenceInfo = getEvidenceBadge(act.booking_requirement ? "published_price" : "calculated_estimate");
+              return (
+                <div
+                  key={act.id}
+                  id={resolveSelectedWaypointCardId(act.id)}
+                  onClick={() => setActiveActivityId(act.id)}
+                  className="flex flex-col gap-3 cursor-pointer"
+                >
                   <div
-                    key={act.id}
-                    id={resolveSelectedWaypointCardId(act.id)}
-                    onClick={() => setActiveActivityId(act.id)}
-                    className="flex flex-col gap-3 cursor-pointer"
+                    className={`relative bg-surface-container-lowest rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all border ${
+                      activeActivityId === act.id
+                        ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
+                        : "border-surface-container-high/40"
+                    }`}
                   >
-                    <div
-                      className={`relative bg-surface-container-lowest rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all border ${
-                        activeActivityId === act.id
-                          ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
-                          : "border-surface-container-high/40"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3.5">
-                          <div className="flex flex-col items-center">
-                            <span className="size-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-bold shadow-xs">
-                              {idx + 1}
-                            </span>
-                            <span className="text-[11px] text-on-surface-variant mt-1.5 font-semibold">
-                              {act.planned_time ? act.planned_time.slice(0, 5) : "Daytime"}
-                            </span>
-                          </div>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-base text-on-surface font-semibold">
-                                {act.title}
-                              </h3>
-                              {act.is_must_see && (
-                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
-                                  <span className="material-symbols-outlined text-[14px]">star</span>
-                                  Must See
-                                </div>
-                              )}
-                              <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-medium">
-                                {act.place_category || "Sightseeing"}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3.5">
+                        <div className="flex flex-col items-center">
+                          <span className="size-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-bold shadow-xs">
+                            {idx + 1}
+                          </span>
+                          <span className="text-[11px] text-on-surface-variant mt-1.5 font-semibold">
+                            {act.planned_time ? act.planned_time.slice(0, 5) : "Daytime"}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-base text-on-surface font-semibold">
+                              {act.title}
+                            </h3>
+                            {act.is_user_edited && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
+                                <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                User Edited
                               </span>
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${evidenceInfo.badge}`}>
-                                <span className="material-symbols-outlined text-[12px]">{evidenceInfo.icon}</span>
-                                {evidenceInfo.label}
-                              </span>
-                            </div>
-
-                            {act.description && (
-                              <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
-                                {act.description}
-                              </p>
                             )}
-
-                            {act.place_name && (
-                              <div className="text-[11px] text-on-surface-variant flex items-center gap-1 pt-0.5">
-                                <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
-                                <span>{act.place_name}</span>
-                                {act.latitude && act.longitude && (
-                                  <span className="text-outline">
-                                    • {act.latitude.toFixed(4)}° N, {act.longitude.toFixed(4)}° E
-                                  </span>
-                                )}
+                            {act.is_must_see && (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
+                                <span className="material-symbols-outlined text-[14px]">star</span>
+                                Must See
                               </div>
                             )}
-
-                            <div className="flex items-center gap-4 pt-1 text-xs text-on-surface-variant">
-                              <span className="flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[16px] text-primary">
-                                  schedule
-                                </span>
-                                Duration: {act.duration_minutes}m
-                              </span>
-                              {act.booking_requirement && (
-                                <span className="flex items-center gap-1 text-secondary font-medium">
-                                  <span className="material-symbols-outlined text-[16px]">
-                                    confirmation_number
-                                  </span>
-                                  {act.booking_requirement}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container-high"
-                          aria-label="Options"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">
-                            more_vert
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Transit Leg if travel mode specified */}
-                    {act.travel_mode_to_next && (
-                      <div className="relative pl-6 py-1">
-                        <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2.5 rounded-xl shadow-2xs border border-surface-container-high/30">
-                          <div className="size-7 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
-                            <span className="material-symbols-outlined text-[18px]">
-                              {act.travel_mode_to_next === "transit" ? "train" : act.travel_mode_to_next === "drive" ? "local_taxi" : "directions_walk"}
+                            <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-medium">
+                              {act.place_category || "Sightseeing"}
+                            </span>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${evidenceInfo.badge}`}>
+                              <span className="material-symbols-outlined text-[12px]">{evidenceInfo.icon}</span>
+                              {evidenceInfo.label}
                             </span>
                           </div>
-                          <div className="flex-1 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-on-surface capitalize">
-                                {act.travel_mode_to_next} to Next Stop
-                              </span>
-                              {act.transit_duration_seconds && (
-                                <span className="text-on-surface-variant">
-                                  • {formatTransitDuration(act.transit_duration_seconds)}
-                                </span>
-                              )}
-                              {act.transit_distance_meters && (
-                                <span className="text-on-surface-variant">
-                                  ({formatTransitDistance(act.transit_distance_meters)})
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-tertiary flex items-center gap-1 font-medium">
-                              <span className="material-symbols-outlined text-[16px]">navigation</span>
-                              Ground Verified
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )
-          ) : (
-            /* SHOWCASE SCHEDULE (Days 1–6) */
-            <>
-              {currentShowcase.activities.map((act, index) => {
-                if (act.isAiSuggestion && aiSuggestionRemoved) return null;
 
-                const isAiCard = act.isAiSuggestion;
-                return (
-                  <div
-                    key={act.id}
-                    id={resolveSelectedWaypointCardId(act.id)}
-                    onClick={() => setActiveActivityId(act.id)}
-                    className="flex flex-col gap-3 transition-transform duration-150 hover:scale-[1.008] cursor-pointer"
-                  >
-                    <div
-                      className={`relative rounded-2xl p-5 shadow-2xs transition-all border ${
-                        activeActivityId === act.id
-                          ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
-                          : isAiCard
-                          ? aiSuggestionAccepted
-                            ? "bg-tertiary-fixed/30 border-tertiary/30"
-                            : "bg-surface-container-lowest border-surface-container-high/40"
-                          : "bg-surface-container-lowest hover:shadow-md border-surface-container-high/40"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3.5">
-                          <div className="flex flex-col items-center">
-                            <span
-                              className={`size-8 rounded-full flex items-center justify-center text-sm font-bold shadow-xs ${
-                                isAiCard
-                                  ? "bg-secondary text-on-secondary"
-                                  : "bg-primary text-on-primary"
-                              }`}
-                            >
-                              {act.step}
-                            </span>
-                            <span className="text-[11px] text-on-surface-variant mt-1.5 font-semibold">
-                              {act.time}
-                            </span>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-base text-on-surface font-semibold">
-                                {act.title}
-                              </h3>
-                              <span className={`px-2 py-0.5 rounded-full text-[11px] ${act.categoryType}`}>
-                                {isAiCard && aiSuggestionAccepted ? "Confirmed in Itinerary" : act.category}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${act.evidenceBadge}`}>
-                                {act.evidence}
-                              </span>
-                            </div>
-
+                          {act.description && (
                             <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
                               {act.description}
                             </p>
+                          )}
 
-                            {act.location && (
-                              <div className="text-[11px] text-on-surface-variant flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
-                                <span>{act.location}</span>
-                              </div>
-                            )}
-
-                            {act.curatorNote && (
-                              <div className="flex items-start gap-2 bg-secondary-fixed/40 rounded-xl p-2.5 text-on-secondary-container text-xs">
-                                <span className="material-symbols-outlined text-[18px] text-secondary shrink-0 mt-0.5">
-                                  tips_and_updates
+                          {act.place_name && (
+                            <div className="text-[11px] text-on-surface-variant flex items-center gap-1 pt-0.5">
+                              <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                              <span>{act.place_name}</span>
+                              {act.latitude && act.longitude && (
+                                <span className="text-outline">
+                                  • {act.latitude.toFixed(4)}°, {act.longitude.toFixed(4)}°
                                 </span>
-                                <p className="leading-relaxed">
-                                  <strong>Curator Note:</strong> {act.curatorNote}
-                                </p>
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-4 pt-1 text-xs text-on-surface-variant">
-                              <span className="flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[16px] text-primary">
-                                  schedule
-                                </span>
-                                {act.duration}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[16px] text-secondary">
-                                  payments
-                                </span>
-                                {act.cost}
-                              </span>
+                              )}
                             </div>
+                          )}
 
-                            {/* AI Suggestion Accept/Replace/Remove Buttons */}
-                            {isAiCard && !aiSuggestionAccepted && (
-                              <div className="flex items-center gap-2.5 pt-2 text-xs">
-                                <button
-                                  type="button"
-                                  onClick={() => setAiSuggestionAccepted(true)}
-                                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-semibold transition-all shadow-2xs cursor-pointer"
-                                >
-                                  <span className="material-symbols-outlined text-[18px]">
-                                    check_circle
-                                  </span>
-                                  <span>Accept</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold transition-all cursor-pointer"
-                                >
-                                  <span className="material-symbols-outlined text-[18px]">
-                                    swap_horiz
-                                  </span>
-                                  <span>Replace</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setAiSuggestionRemoved(true)}
-                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-container-high hover:bg-error-container hover:text-on-error-container text-on-surface-variant font-semibold transition-all cursor-pointer"
-                                >
-                                  <span className="material-symbols-outlined text-[18px]">
-                                    delete
-                                  </span>
-                                  <span>Remove</span>
-                                </button>
-                              </div>
+                          <div className="flex items-center gap-4 pt-1 text-xs text-on-surface-variant">
+                            <span className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[16px] text-primary">
+                                schedule
+                              </span>
+                              Duration: {act.duration_minutes}m
+                            </span>
+                            {act.booking_requirement && (
+                              <span className="flex items-center gap-1 text-secondary font-medium">
+                                <span className="material-symbols-outlined text-[16px]">
+                                  confirmation_number
+                                </span>
+                                {act.booking_requirement}
+                              </span>
                             )}
                           </div>
                         </div>
+                      </div>
 
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
-                          className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container-high"
-                          aria-label="Options"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveActivity(idx, "up");
+                          }}
+                          disabled={idx === 0}
+                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
+                          title="Move Up"
+                          aria-label="Move Up"
                         >
-                          <span className="material-symbols-outlined text-[20px]">
-                            more_vert
-                          </span>
+                          <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveActivity(idx, "down");
+                          }}
+                          disabled={idx === currentDbActivities.length - 1}
+                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
+                          title="Move Down"
+                          aria-label="Move Down"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditModalForDb(act);
+                          }}
+                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors cursor-pointer"
+                          title="Edit Activity"
+                          aria-label="Edit Activity"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteActivity(act.id, act.title);
+                          }}
+                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer"
+                          title="Delete Activity"
+                          aria-label="Delete Activity"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Associated Transit Leg */}
-                    {currentShowcase.transits[index] && (
-                      <div className="relative pl-6 py-1">
-                        <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2.5 rounded-xl shadow-2xs border border-surface-container-high/30">
-                          <div className="size-7 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
-                            <span className="material-symbols-outlined text-[18px]">
-                              {currentShowcase.transits[index].icon}
+                  {/* Transit Leg if travel mode specified */}
+                  {act.travel_mode_to_next && (
+                    <div className="relative pl-6 py-1">
+                      <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2.5 rounded-xl shadow-2xs border border-surface-container-high/30">
+                        <div className="size-7 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">
+                            {act.travel_mode_to_next === "transit" ? "train" : act.travel_mode_to_next === "drive" ? "local_taxi" : "directions_walk"}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-on-surface capitalize">
+                              {act.travel_mode_to_next} to Next Stop
                             </span>
-                          </div>
-                          <div className="flex-1 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-on-surface">
-                                {currentShowcase.transits[index].title}
-                              </span>
+                            {act.transit_duration_seconds && (
                               <span className="text-on-surface-variant">
-                                • {currentShowcase.transits[index].sub}
+                                • {formatTransitDuration(act.transit_duration_seconds)}
                               </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-on-surface">
-                                {currentShowcase.transits[index].cost}
+                            )}
+                            {act.transit_distance_meters && (
+                              <span className="text-on-surface-variant">
+                                ({formatTransitDistance(act.transit_distance_meters)})
                               </span>
-                              <span className="material-symbols-outlined text-[16px] text-tertiary">
-                                {currentShowcase.transits[index].statusIcon}
-                              </span>
-                            </div>
+                            )}
                           </div>
+                          <span className="text-tertiary flex items-center gap-1 font-medium">
+                            <span className="material-symbols-outlined text-[16px]">navigation</span>
+                            Ground Verified
+                          </span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
 
           {/* Add Activity Action Button */}
           <button
             type="button"
-            className="w-full py-4 rounded-2xl bg-surface-container-low hover:bg-surface-container text-primary flex items-center justify-center gap-2 text-sm font-semibold transition-colors shadow-2xs cursor-pointer"
+            onClick={handleOpenAddModal}
+            className="w-full py-4 rounded-2xl bg-surface-container-low hover:bg-surface-container text-primary flex items-center justify-center gap-2 text-sm font-semibold transition-colors shadow-2xs cursor-pointer border border-dashed border-primary/30 hover:border-primary"
           >
             <span className="material-symbols-outlined text-[20px]">
               add_circle
@@ -1157,6 +706,76 @@ export function ItineraryClientView({
         isOpen={groupTalkOpen}
         onClose={() => setGroupTalkOpen(false)}
       />
+
+      {/* Activity Add / Edit Modal */}
+      <ActivityEditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveActivity}
+        initialData={modalInitialData}
+        dayNumber={selectedDay}
+      />
+
+      {/* Non-blocking Delete Confirmation Dialog */}
+      {activityToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200"
+        >
+          <div
+            className="w-full max-w-sm bg-surface rounded-2xl border border-surface-container-high/40 p-5 shadow-xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[20px]">delete</span>
+              </div>
+              <div>
+                <h3 id="delete-dialog-title" className="text-sm font-bold text-on-surface">
+                  Delete Activity?
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-2">
+                  Are you sure you want to delete &ldquo;{activityToDelete.title}&rdquo;? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container-high/40">
+              <button
+                type="button"
+                onClick={() => setActivityToDelete(null)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteActivity}
+                className="px-4 py-1.5 rounded-xl bg-error hover:bg-error/90 text-on-error text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Error Notification Toast */}
+      {actionError && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md bg-error-container text-on-error-container px-4 py-3 rounded-2xl shadow-lg border border-error/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span className="material-symbols-outlined text-[20px] text-error shrink-0">error</span>
+          <span className="text-xs flex-1">{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="size-6 rounded-full hover:bg-black/10 flex items-center justify-center text-xs"
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

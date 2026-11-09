@@ -40,7 +40,8 @@ export default async function GlobalBudgetPage() {
 
   return (
     <StitchBudgetView
-      tripTitle={trip?.title || "Kyoto & Tokyo Autumn Journey 2025"}
+      tripId={trip?.id || ""}
+      tripTitle={trip?.title || "Budget Intelligence"}
       budgetLimitMinorUnits={trip?.budget_minor_units}
       budgetCurrency={trip?.budget_currency || "INR"}
       budgetBasis={trip?.budget_basis || "total"}

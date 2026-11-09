@@ -46,113 +46,6 @@ interface ProposalDbRow {
   profiles?: { display_name: string | null } | null;
 }
 
-// Demo mock members for showcase / offline mode
-const DEMO_MEMBERS: Record<string, TripMember[]> = {
-  default: [
-    {
-      id: "mem-1",
-      trip_id: "mock-kyoto-autumn-2026",
-      user_id: "user-alex",
-      role: "owner",
-      joined_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-      profile: {
-        id: "user-alex",
-        display_name: "Alex Rivera",
-        avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-        email: "alex@wanderway.app",
-      },
-    },
-    {
-      id: "mem-2",
-      trip_id: "mock-kyoto-autumn-2026",
-      user_id: "user-elena",
-      role: "editor",
-      joined_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-      profile: {
-        id: "user-elena",
-        display_name: "Elena Rostova",
-        avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",
-        email: "elena@travel.org",
-      },
-    },
-    {
-      id: "mem-3",
-      trip_id: "mock-kyoto-autumn-2026",
-      user_id: "user-marcus",
-      role: "editor",
-      joined_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-      profile: {
-        id: "user-marcus",
-        display_name: "Marcus Vance",
-        avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-        email: "marcus.v@adventure.net",
-      },
-    },
-  ],
-};
-
-const DEMO_MESSAGES: Record<string, TripMessage[]> = {
-  default: [
-    {
-      id: "msg-1",
-      trip_id: "mock-kyoto-autumn-2026",
-      sender_id: "user-alex",
-      content: "Welcome everyone to Kyoto & Tokyo Autumn Odyssey! Let's lock in our key stops and rail bookings.",
-      message_type: "text",
-      created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
-      sender_name: "Alex Rivera",
-      sender_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "msg-2",
-      trip_id: "mock-kyoto-autumn-2026",
-      sender_id: "user-elena",
-      content: "I checked the Shinkansen Nozomi reservation times. We should target the 09:15 AM departure from Shinagawa.",
-      message_type: "text",
-      created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-      sender_name: "Elena Rostova",
-      sender_avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "msg-3",
-      trip_id: "mock-kyoto-autumn-2026",
-      sender_id: "user-marcus",
-      content: "Also, weather forecast shows a 40% chance of showers on Day 2 in Arashiyama. We should pack compact umbrellas and water-resistant boots!",
-      message_type: "text",
-      created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-      sender_name: "Marcus Vance",
-      sender_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-    },
-  ],
-};
-
-const DEMO_PROPOSALS: Record<string, TripActivityProposal[]> = {
-  default: [
-    {
-      id: "prop-1",
-      trip_id: "mock-kyoto-autumn-2026",
-      proposer_id: "user-elena",
-      day_id: "day-2",
-      proposed_action: "add",
-      proposal_data: {
-        title: "Tenryu-ji Sogenchi Garden Morning Tea",
-        description: "Arrive right at 8:30 AM before tour buses to enjoy peaceful matcha overlooking the pond reflection.",
-        estimated_cost_minor: 120000, // 1,200 JPY
-        currency: "JPY",
-        duration_minutes: 60,
-        time_of_day: "08:30",
-        location_name: "Tenryu-ji Temple, Arashiyama",
-        reason: "Much quieter than afternoon, UNESCO World Heritage site",
-      },
-      status: "pending",
-      upvotes: ["user-elena", "user-marcus"],
-      downvotes: [],
-      created_at: new Date(Date.now() - 3600000 * 3).toISOString(),
-      proposer_name: "Elena Rostova",
-    },
-  ],
-};
-
 /**
  * Fetch members of a trip
  */
@@ -165,25 +58,43 @@ export async function getTripMembers(tripId: string): Promise<TripMember[]> {
       .eq("trip_id", tripId)
       .order("joined_at", { ascending: true });
 
-    if (error || !members || members.length === 0) {
-      return DEMO_MEMBERS[tripId] || DEMO_MEMBERS.default;
+    if (!error && members && members.length > 0) {
+      return (members as unknown as MemberDbRow[]).map((m) => ({
+        id: m.id,
+        trip_id: m.trip_id,
+        user_id: m.user_id,
+        role: m.role,
+        joined_at: m.joined_at,
+        profile: m.profiles ? {
+          id: m.profiles.id,
+          display_name: m.profiles.display_name,
+          avatar_url: m.profiles.avatar_url,
+        } : undefined,
+      }));
     }
 
-    return (members as unknown as MemberDbRow[]).map((m) => ({
-      id: m.id,
-      trip_id: m.trip_id,
-      user_id: m.user_id,
-      role: m.role,
-      joined_at: m.joined_at,
-      profile: m.profiles ? {
-        id: m.profiles.id,
-        display_name: m.profiles.display_name,
-        avatar_url: m.profiles.avatar_url,
-      } : undefined,
-    }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      return [
+        {
+          id: `owner-${user.id}`,
+          trip_id: tripId,
+          user_id: user.id,
+          role: "owner",
+          joined_at: new Date().toISOString(),
+          profile: {
+            id: user.id,
+            display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Organizer",
+            avatar_url: user.user_metadata?.avatar_url || undefined,
+            email: user.email,
+          },
+        },
+      ];
+    }
+    return [];
   } catch (err) {
-    console.warn("getTripMembers fallback to demo:", err);
-    return DEMO_MEMBERS[tripId] || DEMO_MEMBERS.default;
+    console.warn("getTripMembers error:", err);
+    return [];
   }
 }
 
@@ -201,7 +112,7 @@ export async function getTripMessages(tripId: string): Promise<TripMessage[]> {
       .limit(100);
 
     if (error || !messages || messages.length === 0) {
-      return DEMO_MESSAGES[tripId] || DEMO_MESSAGES.default;
+      return [];
     }
 
     return (messages as unknown as MessageDbRow[]).map((m) => ({
@@ -216,8 +127,8 @@ export async function getTripMessages(tripId: string): Promise<TripMessage[]> {
       sender_avatar: m.profiles?.avatar_url || undefined,
     }));
   } catch (err) {
-    console.warn("getTripMessages fallback to demo:", err);
-    return DEMO_MESSAGES[tripId] || DEMO_MESSAGES.default;
+    console.warn("getTripMessages error:", err);
+    return [];
   }
 }
 
@@ -291,7 +202,7 @@ export async function getTripProposals(tripId: string): Promise<TripActivityProp
       .order("created_at", { ascending: false });
 
     if (error || !proposals || proposals.length === 0) {
-      return DEMO_PROPOSALS[tripId] || DEMO_PROPOSALS.default;
+      return [];
     }
 
     return (proposals as unknown as ProposalDbRow[]).map((p) => ({
@@ -309,8 +220,8 @@ export async function getTripProposals(tripId: string): Promise<TripActivityProp
       proposer_name: p.profiles?.display_name || "Co-Traveler",
     }));
   } catch (err) {
-    console.warn("getTripProposals fallback:", err);
-    return DEMO_PROPOSALS[tripId] || DEMO_PROPOSALS.default;
+    console.warn("getTripProposals error:", err);
+    return [];
   }
 }
 

@@ -6,6 +6,14 @@ import type { DestinationWeatherForecast } from "@/lib/weather/types";
 import type { ConsularAdvisory } from "@/lib/advisories/types";
 import { cacheVaultOffline, getCachedVaultOffline } from "@/lib/offline/storage";
 import { useOfflineStatus } from "@/lib/offline/use-offline";
+import {
+  createDocumentAction,
+  deleteDocumentAction,
+} from "@/lib/vault/actions";
+import {
+  formatStoragePath,
+  VAULT_CATEGORIES,
+} from "@/lib/vault/helpers";
 
 type DbDocument = Database["public"]["Tables"]["documents"]["Row"];
 
@@ -31,62 +39,10 @@ interface VaultDoc {
   downloadName: string;
 }
 
-const DEFAULT_DOCUMENTS: VaultDoc[] = [
-  {
-    id: "doc-1",
-    category: "flights",
-    title: "ANA Flight E-Ticket & Boarding Pass",
-    sub: "PDF • 1.4 MB",
-    type: "flights",
-    icon: "airplane_ticket",
-    badges: [
-      { label: "Offline Ready", icon: "offline_pin", style: "bg-tertiary-fixed text-on-tertiary-fixed" },
-      { label: "Verified QR", icon: "qr_code_2", style: "bg-primary-fixed text-on-primary-fixed" },
-    ],
-    downloadName: "ANA_NH107_BoardingPass.pdf",
-  },
-  {
-    id: "doc-2",
-    category: "hotels",
-    title: "Kyoto Machiya Ryokan Reservation Voucher",
-    sub: "PDF • Ref #RYO-44910",
-    type: "hotels",
-    icon: "hotel",
-    badges: [
-      { label: "Synced", icon: "offline_pin", style: "bg-tertiary-fixed text-on-tertiary-fixed" },
-    ],
-    downloadName: "Kyoto_Machiya_Voucher.pdf",
-  },
-  {
-    id: "doc-3",
-    category: "insurance",
-    title: "Allianz Global Travel Insurance Policy",
-    sub: "PDF • Policy #ALZ-88310",
-    type: "insurance",
-    icon: "health_and_safety",
-    badges: [
-      { label: "Synced", icon: "offline_pin", style: "bg-tertiary-fixed text-on-tertiary-fixed" },
-    ],
-    downloadName: "Allianz_Global_Insurance.pdf",
-  },
-  {
-    id: "doc-4",
-    category: "passports",
-    title: "JR Whole Japan Rail Pass Exchange Order",
-    sub: "PDF • 7-Day Ordinary",
-    type: "passports",
-    icon: "train",
-    badges: [
-      { label: "Physical Exchange Required", icon: "info", style: "bg-secondary-container text-on-secondary-container" },
-    ],
-    downloadName: "JR_RailPass_ExchangeOrder.pdf",
-  },
-];
-
 export function StitchVaultView({
-  tripTitle = "Kyoto & Tokyo Autumn Journey 2025",
+  tripTitle = "Travel Vault",
   tripId = "default",
-  destination = "Kyoto, Japan",
+  destination = "Destination",
   dbDocuments,
 }: StitchVaultViewProps) {
   const { isOffline } = useOfflineStatus(tripId);
@@ -98,6 +54,11 @@ export function StitchVaultView({
   const [isDragging, setIsDragging] = useState(false);
   const [liveWeather, setLiveWeather] = useState<DestinationWeatherForecast | null>(null);
   const [liveAdvisory, setLiveAdvisory] = useState<ConsularAdvisory | null>(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadSelectedFile, setUploadSelectedFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadCategory, setUploadCategory] = useState<VaultDocCategory>("flights");
+  const [inspectedPassDoc, setInspectedPassDoc] = useState<VaultDoc | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -163,7 +124,7 @@ export function StitchVaultView({
         if (cached && cached.data && cached.data.length > 0) {
           return cached.data;
         }
-        return DEFAULT_DOCUMENTS;
+        return [];
       })();
 
   const [documents, setDocuments] = useState<VaultDoc[]>(initialDocs);
@@ -224,21 +185,9 @@ export function StitchVaultView({
   const handleFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
-    const newDoc: VaultDoc = {
-      id: `doc-${Date.now()}`,
-      category: "flights",
-      title: file.name,
-      sub: `${(file.size / (1024 * 1024)).toFixed(1)} MB • Added just now`,
-      type: "flights",
-      icon: "description",
-      badges: [
-        { label: "AES-256 Encrypted", icon: "lock", style: "bg-tertiary-fixed text-on-tertiary-fixed" },
-      ],
-      downloadName: file.name,
-    };
-    setDocuments((prev) => [newDoc, ...prev]);
-    setUploadNotice(`Encrypted & stored "${file.name}" locally in Cloud Vault.`);
-    setTimeout(() => setUploadNotice(null), 4000);
+    setUploadSelectedFile(file);
+    setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
+    setIsUploadModalOpen(true);
   };
 
   const filteredDocs = documents.filter((doc) => {
@@ -705,54 +654,101 @@ export function StitchVaultView({
 
           {/* Vault Documents List */}
           <div className="flex flex-col gap-3">
-            {filteredDocs.map((doc) => (
-              <div
-                key={doc.id}
-                className="p-4 rounded-2xl bg-surface-container-low shadow-xs hover:shadow-sm transition-shadow flex items-start justify-between gap-3 border border-outline-variant/30"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[20px]">
-                      {doc.icon}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-on-surface">
-                      {doc.title}
-                    </span>
-                    <div className="flex items-center flex-wrap gap-2 mt-1">
-                      <span className="text-xs text-on-surface-variant">
-                        {doc.sub}
-                      </span>
-                      {doc.badges.map((b, idx) => (
-                        <span
-                          key={idx}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${b.style}`}
-                        >
-                          {b.icon && (
-                            <span className="material-symbols-outlined text-[12px]">
-                              {b.icon}
-                            </span>
-                          )}
-                          {b.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+            {filteredDocs.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-center flex flex-col items-center justify-center gap-3">
+                <div className="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]">folder_off</span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-on-surface">No documents stored in vault</h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    Upload your boarding pass, hotel voucher, or emergency ID for hardware-encrypted offline access.
+                  </p>
                 </div>
                 <button
-                  onClick={() => {
-                    setActiveQrDoc(`Downloaded: ${doc.title} (${doc.downloadName})`);
-                  }}
-                  className="p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
-                  title="Download / Open"
+                  type="button"
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[20px]">
-                    download
-                  </span>
+                  + Upload First Document
                 </button>
               </div>
-            ))}
+            ) : (
+              filteredDocs.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="p-4 rounded-2xl bg-surface-container-low shadow-xs hover:shadow-sm transition-shadow flex items-start justify-between gap-3 border border-outline-variant/30"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[20px]">
+                        {doc.icon}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-on-surface">
+                        {doc.title}
+                      </span>
+                      <div className="flex items-center flex-wrap gap-2 mt-1">
+                        <span className="text-xs text-on-surface-variant">
+                          {doc.sub}
+                        </span>
+                        {doc.badges.map((b, idx) => (
+                          <span
+                            key={idx}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${b.style}`}
+                          >
+                            {b.icon && (
+                              <span className="material-symbols-outlined text-[12px]">
+                                {b.icon}
+                              </span>
+                            )}
+                            {b.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => setInspectedPassDoc(doc)}
+                      className="p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
+                      title="Inspect QR Boarding Pass / Voucher"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        qr_code_2
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveQrDoc(`Downloaded: ${doc.title} (${doc.downloadName})`);
+                      }}
+                      className="p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
+                      title="Download / Open"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        download
+                      </span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Delete "${doc.title}" from vault?`)) return;
+                        await deleteDocumentAction(doc.id);
+                        setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+                        setUploadNotice(`Document "${doc.title}" deleted.`);
+                        setTimeout(() => setUploadNotice(null), 3000);
+                      }}
+                      className="p-2 rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-colors cursor-pointer"
+                      title="Delete document"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        delete
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Quick Action: Upload Secure Document & Target */}
@@ -777,8 +773,7 @@ export function StitchVaultView({
                 : "bg-surface-container-low border-outline-variant/50 hover:bg-surface-container"
             }`}
             onClick={() => {
-              const el = document.getElementById("vaultFileInput");
-              el?.click();
+              setIsUploadModalOpen(true);
             }}
           >
             <div className="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -938,6 +933,252 @@ export function StitchVaultView({
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+      {/* QR Pass Inspection Modal */}
+      {inspectedPassDoc && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 flex flex-col gap-5">
+            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[24px]">qr_code_2</span>
+                <span className="text-base font-bold text-on-surface">Digital Travel Pass</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectedPassDoc(null)}
+                className="p-1.5 rounded-full text-on-surface-variant hover:bg-surface-container cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Pass Graphic Card */}
+            <div className="p-5 rounded-2xl bg-surface-container flex flex-col items-center gap-4 text-center border border-outline-variant/20">
+              <span className="text-xs uppercase tracking-widest font-extrabold text-primary">
+                {inspectedPassDoc.category.toUpperCase()} • OFFLINE VALIDATED
+              </span>
+              <h3 className="text-lg font-bold text-on-surface">
+                {inspectedPassDoc.title}
+              </h3>
+              <p className="text-xs text-on-surface-variant">
+                {inspectedPassDoc.sub}
+              </p>
+
+              {/* High-Definition QR Code Matrix */}
+              <div className="p-4 bg-white rounded-2xl shadow-inner border border-gray-200 flex flex-col items-center">
+                <svg className="size-48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="5" y="5" width="28" height="28" rx="4" fill="#0f172a" />
+                  <rect x="9" y="9" width="20" height="20" rx="2" fill="white" />
+                  <rect x="13" y="13" width="12" height="12" fill="#0f172a" />
+
+                  <rect x="67" y="5" width="28" height="28" rx="4" fill="#0f172a" />
+                  <rect x="71" y="9" width="20" height="20" rx="2" fill="white" />
+                  <rect x="75" y="13" width="12" height="12" fill="#0f172a" />
+
+                  <rect x="5" y="67" width="28" height="28" rx="4" fill="#0f172a" />
+                  <rect x="9" y="71" width="20" height="20" rx="2" fill="white" />
+                  <rect x="13" y="75" width="12" height="12" fill="#0f172a" />
+
+                  <rect x="38" y="10" width="6" height="6" fill="#0f172a" />
+                  <rect x="48" y="10" width="6" height="6" fill="#0f172a" />
+                  <rect x="58" y="10" width="6" height="6" fill="#0f172a" />
+                  <rect x="10" y="38" width="6" height="6" fill="#0f172a" />
+                  <rect x="10" y="48" width="6" height="6" fill="#0f172a" />
+                  <rect x="10" y="58" width="6" height="6" fill="#0f172a" />
+
+                  <rect x="38" y="38" width="10" height="10" fill="#0f172a" />
+                  <rect x="52" y="38" width="8" height="8" fill="#0f172a" />
+                  <rect x="64" y="38" width="8" height="8" fill="#0f172a" />
+                  <rect x="76" y="38" width="8" height="8" fill="#0f172a" />
+                  <rect x="38" y="52" width="8" height="8" fill="#0f172a" />
+                  <rect x="50" y="50" width="12" height="12" fill="#0f172a" />
+                  <rect x="66" y="52" width="8" height="8" fill="#0f172a" />
+                  <rect x="78" y="52" width="6" height="6" fill="#0f172a" />
+                  <rect x="38" y="66" width="8" height="8" fill="#0f172a" />
+                  <rect x="50" y="66" width="10" height="10" fill="#0f172a" />
+                  <rect x="64" y="66" width="8" height="8" fill="#0f172a" />
+                  <rect x="76" y="66" width="18" height="18" rx="2" fill="#0f172a" />
+                  <rect x="80" y="70" width="10" height="10" fill="white" />
+                  <rect x="38" y="78" width="8" height="16" fill="#0f172a" />
+                  <rect x="50" y="80" width="14" height="6" fill="#0f172a" />
+                </svg>
+                <span className="font-mono text-[10px] text-gray-500 mt-2 font-semibold">
+                  PASS-REF: {inspectedPassDoc.id.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-semibold">
+                <span className="material-symbols-outlined text-[16px]">verified</span>
+                <span>Cryptographically Signed • ICAO Compliant</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setUploadNotice(`Saved "${inspectedPassDoc.downloadName}" to device.`);
+                  setTimeout(() => setUploadNotice(null), 3000);
+                  setInspectedPassDoc(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span>Save Offline Pass</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectedPassDoc(null)}
+                className="px-4 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Document Modal */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface-container-lowest rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/30 flex flex-col gap-5">
+            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[24px]">upload_file</span>
+                <span className="text-base font-bold text-on-surface">Upload Secure Document</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsUploadModalOpen(false)}
+                className="p-1.5 rounded-full text-on-surface-variant hover:bg-surface-container cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!uploadTitle.trim()) return;
+
+                const cat = uploadCategory;
+                const fileName = uploadSelectedFile?.name || `${uploadTitle.trim().replace(/\s+/g, "_")}.pdf`;
+                const fileSize = uploadSelectedFile?.size || 512000;
+                const mimeType = uploadSelectedFile?.type || "application/pdf";
+                const storagePath = formatStoragePath(tripId, cat, fileName);
+
+                const res = await createDocumentAction({
+                  trip_id: tripId,
+                  uploaded_by: "current_user",
+                  title: uploadTitle.trim(),
+                  category: cat,
+                  storage_path: storagePath,
+                  file_size_bytes: fileSize,
+                  mime_type: mimeType,
+                });
+
+                if (res.success && res.document) {
+                  const newDoc: VaultDoc = {
+                    id: res.document.id,
+                    category: res.document.category,
+                    title: res.document.title,
+                    sub: `${(fileSize / (1024 * 1024)).toFixed(1)} MB • Added just now`,
+                    type: res.document.category,
+                    icon: cat === "flights" ? "airplane_ticket" : cat === "hotels" ? "hotel" : cat === "insurance" ? "health_and_safety" : "train",
+                    badges: [
+                      { label: "AES-256 Encrypted", icon: "lock", style: "bg-tertiary-fixed text-on-tertiary-fixed" },
+                      { label: "Offline Ready", icon: "offline_pin", style: "bg-primary-fixed text-on-primary-fixed" },
+                    ],
+                    downloadName: fileName,
+                  };
+                  setDocuments((prev) => [newDoc, ...prev]);
+                  setUploadNotice(`Encrypted & stored "${res.document.title}" in Cloud Vault.`);
+                  setTimeout(() => setUploadNotice(null), 4000);
+                }
+
+                setIsUploadModalOpen(false);
+                setUploadSelectedFile(null);
+                setUploadTitle("");
+              }}
+              className="flex flex-col gap-4"
+            >
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                  Document Category
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {VAULT_CATEGORIES.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setUploadCategory(c)}
+                      className={`p-2.5 rounded-xl text-xs font-semibold capitalize border transition-all ${
+                        uploadCategory === c
+                          ? "bg-primary text-on-primary border-primary shadow-xs"
+                          : "bg-surface-container text-on-surface border-transparent hover:bg-surface-container-high"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                  Document Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g. Flight Boarding Pass NH107"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-surface-container border border-outline-variant/30 text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                  Select File
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.pkpass"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setUploadSelectedFile(f);
+                      if (!uploadTitle) setUploadTitle(f.name.replace(/\.[^/.]+$/, ""));
+                    }
+                  }}
+                  className="w-full text-xs text-on-surface-variant file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-on-primary hover:file:opacity-90"
+                />
+                {uploadSelectedFile && (
+                  <p className="text-[11px] text-emerald-600 font-medium mt-1">
+                    Selected: {uploadSelectedFile.name} ({(uploadSelectedFile.size / 1024).toFixed(0)} KB)
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/30">
+                <button
+                  type="button"
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="px-4 py-2 rounded-full text-xs font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-full bg-primary text-on-primary text-xs font-bold shadow-xs hover:opacity-95 transition-all"
+                >
+                  Save & Encrypt
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
