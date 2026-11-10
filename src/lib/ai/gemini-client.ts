@@ -4,7 +4,8 @@ import type { CandidatePlan } from "./types";
 
 export const PROMPT_VERSION = "2026-11-07.v1";
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.8-flash";
+export const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
 
 export function getGeminiModel(): string {
   return process.env.GEMINI_MODEL || DEFAULT_MODEL;
@@ -231,6 +232,11 @@ export async function draftCandidatePlan(
   }
 
   const ai = new GoogleGenAI({ apiKey });
+  const primaryModel = getGeminiModel();
+  const modelsToTry = [
+    primaryModel,
+    ...GEMINI_FALLBACK_MODELS.filter((m) => m !== primaryModel),
+  ];
 
   const promptContent = `Generate a travel plan for:
 Destination: ${input.destination}
@@ -243,20 +249,40 @@ User Notes / Preferences: ${input.notes || "None"}
 
 Generate day-by-day activities matching the date range from ${input.startDate} to ${input.endDate}.`;
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: promptContent,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: getResponseSchema(),
-      temperature: 0.4,
-    },
-  });
+  let rawText: string | undefined;
+  let usedModel = primaryModel;
+  let lastError: unknown;
 
-  const rawText = response.text;
+  for (const candidateModel of modelsToTry) {
+    try {
+      const response = await ai.models.generateContent({
+        model: candidateModel,
+        contents: promptContent,
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          responseMimeType: "application/json",
+          responseSchema: getResponseSchema(),
+          temperature: 0.4,
+        },
+      });
+
+      rawText = response.text;
+      if (rawText) {
+        usedModel = candidateModel;
+        break;
+      }
+    } catch (err: unknown) {
+      lastError = err;
+      const status = (err as { status?: number })?.status;
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[draftCandidatePlan] Model ${candidateModel} failed (${status || message}). Trying next fallback...`);
+    }
+  }
+
   if (!rawText) {
-    throw new Error("Gemini returned empty text response");
+    throw new Error(
+      `Gemini drafting failed across models (${modelsToTry.join(", ")}): ${lastError instanceof Error ? lastError.message : String(lastError)}`
+    );
   }
 
   let parsedJson: unknown;
@@ -288,7 +314,7 @@ Generate day-by-day activities matching the date range from ${input.startDate} t
       summary: parseResult.data.summary,
       days: prunedDays,
     },
-    model,
+    model: usedModel,
     promptVersion: PROMPT_VERSION,
   };
 }

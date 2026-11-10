@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { getDestinationWeather } from "@/lib/weather/service";
 import type { DestinationWeatherForecast } from "@/lib/weather/types";
+import { getGeminiModel, GEMINI_FALLBACK_MODELS } from "./gemini-client";
 
 export interface PackingItemRecommendation {
   item_name: string;
@@ -114,7 +115,11 @@ export async function generatePackingRecommendations(
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const primaryModel = getGeminiModel();
+    const modelsToTry = [
+      primaryModel,
+      ...GEMINI_FALLBACK_MODELS.filter((m) => m !== primaryModel),
+    ];
 
     const weatherContext = liveWeather
       ? `Live Forecast: ${liveWeather.condition_text}, Temp ${liveWeather.temperature_current}°C (High: ${liveWeather.daily[0]?.temperature_max}°C, Low: ${liveWeather.daily[0]?.temperature_min}°C), Precip Risk: ${liveWeather.rain_risk} (${liveWeather.precipitation_probability}%), Wind: ${liveWeather.wind_speed_kmh} km/h.`
@@ -134,20 +139,36 @@ Make sure to recommend:
 - Clothing types (temple/church modesty, layers, fabric suggestions)
 - Country-specific power adapters and transit essentials.`;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        responseSchema: getResponseSchema(),
-        temperature: 0.3,
-      },
-    });
+    let text: string | undefined;
+    let lastError: unknown;
 
-    const text = response.text;
+    for (const candidateModel of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: candidateModel,
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: "application/json",
+            responseSchema: getResponseSchema(),
+            temperature: 0.3,
+          },
+        });
+
+        text = response.text;
+        if (text) break;
+      } catch (err: unknown) {
+        lastError = err;
+        const status = (err as { status?: number })?.status;
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[generatePackingRecommendations] Model ${candidateModel} failed (${status || message}). Trying next fallback...`);
+      }
+    }
+
     if (!text) {
-      throw new Error("Empty response from Gemini packing generator.");
+      throw new Error(
+        `Gemini packing generator failed across models (${modelsToTry.join(", ")}): ${lastError instanceof Error ? lastError.message : String(lastError)}`
+      );
     }
 
     const parsed = JSON.parse(text) as PackingAssistantResponse;
