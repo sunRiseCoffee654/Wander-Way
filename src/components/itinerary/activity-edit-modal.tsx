@@ -82,7 +82,7 @@ function parseInitialCostData(req: string) {
     isFree = true;
     evidence = "free";
   } else {
-    const matchNum = req.match(/[\$¥€£]?\s*([0-9,]+(\.[0-9]{2})?)/);
+    const matchNum = req.match(/[₹\$¥€£]?\s*([0-9,]+(\.[0-9]{2})?)/);
     if (matchNum) {
       cost = matchNum[1].replace(/,/g, "");
     }
@@ -125,7 +125,7 @@ function ActivityEditModalContent({
 
   // Price evidence & Cost state
   const [costAmount, setCostAmount] = useState<string>(costInfo.cost);
-  const [currency, setCurrency] = useState<string>("JPY");
+  const [currency, setCurrency] = useState<string>("INR");
   const [evidenceType, setEvidenceType] = useState<PriceEvidenceType>(costInfo.evidence);
   const [isFreeEntry, setIsFreeEntry] = useState(costInfo.isFree);
   const [customBookingNote, setCustomBookingNote] = useState(
@@ -184,7 +184,7 @@ function ActivityEditModalContent({
     if (isFreeEntry) {
       finalBookingReq = customBookingNote.trim() || "No booking required (Free entry)";
     } else if (costAmount.trim()) {
-      const currSymbol = currency === "JPY" ? "¥" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
+      const currSymbol = currency === "INR" ? "₹" : currency === "JPY" ? "¥" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
       const evidenceLabel =
         evidenceType === "published_price"
           ? "Published Tariff"
@@ -279,7 +279,7 @@ function ActivityEditModalContent({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Fushimi Inari Morning Torii Walk"
+              placeholder="e.g. Amber Fort Morning Elephant Courtyard Walk"
               className="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-surface-container-high text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
             />
           </div>
@@ -365,7 +365,7 @@ function ActivityEditModalContent({
               type="text"
               value={placeName}
               onChange={(e) => setPlaceName(e.target.value)}
-              placeholder="e.g. Fushimi Inari Shrine"
+              placeholder="e.g. Amber Fort & Sheesh Mahal, Jaipur"
               className="w-full px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-surface-container-high text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
             />
           </div>
@@ -403,11 +403,11 @@ function ActivityEditModalContent({
                       onChange={(e) => setCurrency(e.target.value)}
                       className="px-2 py-2 rounded-xl bg-surface-container border border-surface-container-high text-on-surface text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
                     >
-                      <option value="JPY">¥ JPY</option>
+                      <option value="INR">₹ INR</option>
                       <option value="USD">$ USD</option>
                       <option value="EUR">€ EUR</option>
                       <option value="GBP">£ GBP</option>
-                      <option value="INR">₹ INR</option>
+                      <option value="JPY">¥ JPY</option>
                     </select>
                     <input
                       type="number"
@@ -448,7 +448,7 @@ function ActivityEditModalContent({
                 type="text"
                 value={customBookingNote}
                 onChange={(e) => setCustomBookingNote(e.target.value)}
-                placeholder="e.g. Reservation Confirmed #GS-104 or Pay on entrance"
+                placeholder="e.g. ASI Ticket #WW-JAI-104 or Pay on entrance"
                 className="w-full px-3 py-2 rounded-xl bg-surface-container border border-surface-container-high text-on-surface text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
@@ -487,7 +487,7 @@ function ActivityEditModalContent({
                       max="90"
                       value={latitude}
                       onChange={(e) => setLatitude(e.target.value)}
-                      placeholder="e.g. 35.7148"
+                      placeholder="e.g. 26.9124"
                       className="w-full px-2.5 py-1.5 rounded-lg bg-surface-container border border-surface-container-high text-on-surface text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
@@ -502,7 +502,7 @@ function ActivityEditModalContent({
                       max="180"
                       value={longitude}
                       onChange={(e) => setLongitude(e.target.value)}
-                      placeholder="e.g. 139.7967"
+                      placeholder="e.g. 75.7873"
                       className="w-full px-2.5 py-1.5 rounded-lg bg-surface-container border border-surface-container-high text-on-surface text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>

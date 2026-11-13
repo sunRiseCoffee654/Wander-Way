@@ -128,7 +128,7 @@ export function DebtSettlementCard({
                 )}
                 {isSettled && (
                   <span className="text-xs font-semibold text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-full">
-                    Settled ($0.00)
+                    Settled ({formatMinorUnits(0, currency)})
                   </span>
                 )}
               </div>

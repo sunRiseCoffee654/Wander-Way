@@ -87,10 +87,10 @@ export function StitchHeader({
                   </span>
                   <div>
                     <span className="font-semibold text-on-surface block">
-                      ANA NH107 on schedule
+                      IndiGo 6E-214 on schedule
                     </span>
                     <span className="text-on-surface-variant text-[11px]">
-                      Departs Gate G98 SFO Direct to HND
+                      Departs Gate B14 DEL Direct to JAI
                     </span>
                   </div>
                 </div>
@@ -103,7 +103,7 @@ export function StitchHeader({
                       Day 4 Action Needed
                     </span>
                     <span className="text-on-surface-variant text-[11px]">
-                      Arashiyama Tea Ceremony unreserved
+                      Amber Fort Sunrise Elephant Gate unreserved
                     </span>
                   </div>
                 </div>

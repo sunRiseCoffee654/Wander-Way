@@ -45,9 +45,9 @@ export function ExpenseModal({
   tripId,
   defaultCurrency = "INR",
   members = [
-    { id: "user_elena", name: "Elena Rostova (You)" },
-    { id: "user_marcus", name: "Marcus Tanaka" },
-    { id: "user_charlie", name: "Charlie Vance" },
+    { id: "user_you", name: "Aarav Sharma (You)" },
+    { id: "user_rohan", name: "Rohan Mehta" },
+    { id: "user_priya", name: "Priya Nair" },
   ],
   onExpenseAdded,
 }: ExpenseModalProps) {
@@ -186,7 +186,7 @@ export function ExpenseModal({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Dinner at Gion Karyo, Metro pass top-up"
+              placeholder="e.g. Dinner at Chokhi Dhani, Jaipur Metro pass"
               className="w-full px-3.5 py-2.5 rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface text-sm focus:outline-hidden focus:border-primary transition-colors"
             />
           </div>

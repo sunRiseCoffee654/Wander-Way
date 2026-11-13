@@ -29,74 +29,70 @@ interface ShowcasePlace {
 
 const SHOWCASE_DESTINATIONS: ShowcasePlace[] = [
   {
-    id: "kyoto",
-    name: "Kyoto, Japan",
-    subtitle: "Cultural Heart & Temple Gardens",
+    id: "jaipur",
+    name: "Jaipur & Udaipur, Rajasthan",
+    subtitle: "Pink City Palaces & Lake Heritage",
     description:
-      "Peak momiji foliage turns tranquil zen temple gardens, vermilion shrine gates, and historic geisha quarters into a rich sensory tapestry.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBavvSLpMP0-m67mvJxTDdZTKGU6M5j0ejnMPfBl81CdVQGhrMx-lY44CYOMyAm5eFU6JYJNn2P_lma9I4Nqt-Qf0INSB5fITk1aWODOAThDteZ48U7Mx0Tj4UmdaFTO7P2PDDc4zjuF76Y3DQ3Ll3rMIrBX8M-zfhpWTRZTZagCrrPDIfeMbavSSaoNI4JbYQpH9PpA9g04yqWwsdCXe52rKcaPd2QZBdklzcB60dV",
+      "Golden sandstone forts, mirror-work royal courtyards, heritage stepwells, and serene boat rides across Lake Pichola come alive in crisp autumn desert air.",
+    image: "/images/destinations/jaipur.jpg",
     rankBadge: "Top Ranked",
     rankIcon: "hotel_class",
-    weatherChip: "18°C Sunny Verified",
-    advisoryChip: "Official Advisory: Safe",
-    budgetTier: "$$$ Moderate",
-    highlights: ["Arashiyama Bamboo", "Fushimi Inari", "Gion Historic District"],
-    transitMeta: "Direct Shinkansen Connection",
+    weatherChip: "26°C Sunny Verified",
+    advisoryChip: "Ministry of Tourism: Safe",
+    budgetTier: "₹₹ Moderate (₹4,500–₹8,500/day)",
+    highlights: ["Amber Fort", "Hawa Mahal", "City Palace & Lake Pichola"],
+    transitMeta: "Vande Bharat Express (DEL–JP)",
     transitIcon: "train",
     category: "culture",
   },
   {
-    id: "swiss-alps",
-    name: "Swiss Alps, Interlaken",
-    subtitle: "Alpine Peaks & Scenic Transit",
+    id: "ladakh",
+    name: "Ladakh & Leh, Himalayas",
+    subtitle: "High-Altitude Passes & Monasteries",
     description:
-      "The gateway to Eiger and Jungfraujoch with integrated cogwheel railways, alpine cable cars, and crisp crystal glacial vistas.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC1MN_xh6uValmeXKjrqf827RDS55aYikwKxVqM9gqy4RXxoMjtAka0At25ia5fJK5q5Gs_N-cxggRs7ZyzBig1sk7SwNP15oTBbl8c5e9KJmliSMOnlURF_PFozn41uEKD-Ch3u2S5BSH4TNV3G1fe1gd3LPNMxhPNVRwCTVzbIcIJVOgLbc9cd51CWU_QZjtQngHi8BrPTdiO8ArJZaVUUY5m2pzY9OfkmiwOXR6f",
-    rankBadge: "Alpine Hub",
+      "Azure glacial lakes at Pangong Tso, centuries-old Buddhist gompas perched on ridges, and iconic Himalayan drives across Khardung La.",
+    image: "/images/destinations/ladakh.jpg",
+    rankBadge: "Himalayan Hub",
     rankIcon: "altitude",
     weatherChip: "Season Rating 9.8/10",
-    advisoryChip: "Verified Transit Available",
-    budgetTier: "$$$$ Premium Tier",
-    highlights: ["Jungfraujoch Railway", "Harder Kulm", "Lake Brienz Cruise"],
-    transitMeta: "SBB Timetable Synced",
+    advisoryChip: "Verified Acclimatization Protocol",
+    budgetTier: "₹₹₹ Expedition Tier",
+    highlights: ["Pangong Tso Lake", "Nubra Valley Dunes", "Thiksey Monastery"],
+    transitMeta: "Leh IXL Direct + BRO Highway",
     transitIcon: "speed",
     category: "adventure",
   },
   {
-    id: "amalfi",
-    name: "Amalfi Coast, Italy",
-    subtitle: "Cliffside Coastal Villages",
+    id: "kerala",
+    name: "Kerala Backwaters & Munnar",
+    subtitle: "Alleppey Houseboats & Tea Hills",
     description:
-      "Cobbled stairways, lemon groves, and dramatic maritime cliffs. Autumn avoids peak summer humidity while preserving temperate coastal walks.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAwGGngXNEz4M6vw_PQZLw57NraI1pmyjdGcQiU9-0mQmRq5p9uz1gXY87BEmmquqNHt9mPgUTZfE3mg9Kl2KpfqQLFMbSuZ1DkRMu64Jt4WW_JiH2qEylA53XYexSxaPKbafOWfnnZ4WF-k4ffiEtWPVO-Wji36x6ZHzEMqCHaQrOmQ6b9xnxSxDTIYBUvASJGl_uqkCxFijjAHD0eMbH8MKG6AHAkay3jfYbrCYpz",
-    rankBadge: "Coastal Vista",
+      "Drift along palm-fringed lagoons in traditional kettuvallam houseboats, wander misty emerald tea estates in Munnar, and explore Fort Kochi spice quarters.",
+    image: "/images/destinations/kerala.jpg",
+    rankBadge: "Coastal & Lagoon",
     rankIcon: "water",
     weatherChip: "Ferry Schedules Sourced",
-    advisoryChip: "Seasonal: Reduced Nov Lines",
-    budgetTier: "$$$$ Premium",
-    highlights: ["Positano Spaggia", "Path of the Gods", "Ravello Gardens"],
-    transitMeta: "Last daily ferry: 17:45",
+    advisoryChip: "Post-Monsoon Lush Season",
+    budgetTier: "₹₹₹ Curated Retreats",
+    highlights: ["Alleppey Backwaters", "Munnar Tea Gardens", "Fort Kochi"],
+    transitMeta: "SWTD Ferry & Cochin Intl (COK)",
     transitIcon: "schedule",
     category: "relaxation",
   },
   {
-    id: "oaxaca",
-    name: "Oaxaca, Mexico",
-    subtitle: "Gastronomic Heritage & Artisans",
+    id: "varanasi",
+    name: "Varanasi & Rishikesh, Ganga",
+    subtitle: "Sacred Ghats & Culinary Heritage",
     description:
-      "Celebrated as the epicenter of indigenous Mesoamerican culinary traditions, handwoven textiles, and ancient Zapotec mountain ruins.",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBeAFFeLU2P4ooHTsqYuX79SGqDg7OTFxAcQR4LtHhu-5QeTY5aGTuovohgTPVF-KoayQrIQsBJRbKl0HWxg8Dj5YCCPdj8w75nZCqHtKT-iKtmrF6cTno4SFl0Zulq4XnwuZOSfXv0f77pnlAy2HJMbVP1hCOJ_giojDMVjy1yrxi9gIdykRg4SevPaOFeINqZDYmh1DtnTPc7c-SWz8yjXQxes_WWxjC4ChC2YS8W",
-    rankBadge: "Culinary Hub",
+      "Ancient stone ghats glowing with evening Ganga Aarti lamps, Banarasi handloom silk ateliers, morning boat chants, and Himalayan foothills spirituality.",
+    image: "/images/destinations/varanasi.jpg",
+    rankBadge: "Heritage & Culinary",
     rankIcon: "local_cafe",
-    weatherChip: "24°C Mild Dry",
-    advisoryChip: "Tourist Zone Patrols Verified",
-    budgetTier: "Calculated Budget: Moderate",
-    highlights: ["Mercado 20 de Noviembre", "Monte Albán", "Hierve el Agua"],
-    transitMeta: "Mesoamerican Rail & Bus",
+    weatherChip: "24°C Mild Breeze",
+    advisoryChip: "Tourist Police & Ghat Patrols",
+    budgetTier: "₹ Budget-Friendly (₹2,800/day)",
+    highlights: ["Dashashwamedh Ghat", "Sarnath Stupa", "Ram Jhula & Beatles Ashram"],
+    transitMeta: "IRCTC Vande Bharat (NDLS–BSB)",
     transitIcon: "security",
     category: "food",
   },
@@ -104,28 +100,24 @@ const SHOWCASE_DESTINATIONS: ShowcasePlace[] = [
 
 const SAVED_SPOTS = [
   {
-    title: "Fushimi Inari Shrine",
-    sub: "Kyoto, Japan • Shinto",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC0mFzaQ9Glo5buiPM8OdrvIHp4qu6PllX0mpn_dt1SD-mMkU01Y-o5sFHyGVMcC_GnkmWivihFuIs5M_oFbpmqF_ErNtlfnZc1JyZjDJ2Z4vpxz_xbq1L6qZqXLylFHhfLOMr2kR514SGPT0jN2fqlQyHhJ6aw85CrLcbq1B65QO2yhPvYYfah4dCmZlN5TCvpExkbf-WXn4_RhwpfdYZyCqH_ynbwP6aYQEfC_lGd",
+    title: "Hawa Mahal & Johari Bazaar",
+    sub: "Jaipur, Rajasthan • Heritage",
+    image: "/images/destinations/hawa-mahal.jpg",
   },
   {
-    title: "Jungfraujoch Sphinx",
-    sub: "Bernese Oberland • Rail",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBX01M14PH2lhn4HErhCzxvdbVM5qfJa4Te-PsOYJoWi14hZghLwIJ6aeQQ3aOxC8kr1lToZ4ldRClcuUbaDkpQnnyUc6ENa5xiaW432URgZZPkyHkedkEVG2QShyH3r0G6vj76__PTIruktY1hSdibJastyLjk4jvTPq8nZ2aAOZ3Oy0Lbk_VTwe_3z8PXTwZKrbc87s6R4u2oJQS3GIoRnsFp7qvjIZz7ZSXgxOl2",
+    title: "Pangong Tso Shore",
+    sub: "Ladakh • 4,225m Alpine Lake",
+    image: "/images/destinations/ladakh.jpg",
   },
   {
-    title: "Positano Cliffside Path",
-    sub: "Amalfi Coast, Italy • Maritime",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAwGGngXNEz4M6vw_PQZLw57NraI1pmyjdGcQiU9-0mQmRq5p9uz1gXY87BEmmquqNHt9mPgUTZfE3mg9Kl2KpfqQLFMbSuZ1DkRMu64Jt4WW_JiH2qEylA53XYexSxaPKbafOWfnnZ4WF-k4ffiEtWPVO-Wji36x6ZHzEMqCHaQrOmQ6b9xnxSxDTIYBUvASJGl_uqkCxFijjAHD0eMbH8MKG6AHAkay3jfYbrCYpz",
+    title: "Alleppey Lagoon Houseboat",
+    sub: "Kerala Backwaters • Maritime",
+    image: "/images/destinations/alleppey.jpg",
   },
   {
-    title: "Mercado 20 de Noviembre",
-    sub: "Oaxaca, Mexico • Culinary",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBeAFFeLU2P4ooHTsqYuX79SGqDg7OTFxAcQR4LtHhu-5QeTY5aGTuovohgTPVF-KoayQrIQsBJRbKl0HWxg8Dj5YCCPdj8w75nZCqHtKT-iKtmrF6cTno4SFl0Zulq4XnwuZOSfXv0f77pnlAy2HJMbVP1hCOJ_giojDMVjy1yrxi9gIdykRg4SevPaOFeINqZDYmh1DtnTPc7c-SWz8yjXQxes_WWxjC4ChC2YS8W",
+    title: "Dashashwamedh Evening Aarti",
+    sub: "Varanasi, UP • Spiritual",
+    image: "/images/destinations/varanasi.jpg",
   },
 ];
 
@@ -136,23 +128,23 @@ export function ExploreClient() {
   const [savedNotices, setSavedNotices] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [consularFeedText, setConsularFeedText] = useState(
-    "Japan: MOFA Level 1 (Safe) • Switzerland: SBB Transit Network 99.4% Nominal • Italy: Level 2 Caution"
+    "India: Ministry of Tourism Level 1 (Safe) • IRCTC Rail Network 99.4% Nominal • Ladakh: Clear Pass Conditions"
   );
 
   useEffect(() => {
     let isMounted = true;
     async function loadConsularFeed() {
       try {
-        const [jpRes, itRes] = await Promise.all([
-          fetch("/api/advisories?destination=Japan"),
-          fetch("/api/advisories?destination=Italy"),
+        const [inRes, ladakhRes] = await Promise.all([
+          fetch("/api/advisories?destination=Jaipur,%20India"),
+          fetch("/api/advisories?destination=Ladakh,%20India"),
         ]);
-        if (jpRes.ok && itRes.ok) {
-          const jpJson = await jpRes.json();
-          const itJson = await itRes.json();
-          if (isMounted && jpJson.success && itJson.success) {
+        if (inRes.ok && ladakhRes.ok) {
+          const inJson = await inRes.json();
+          const ladakhJson = await ladakhRes.json();
+          if (isMounted && inJson.success && ladakhJson.success) {
             setConsularFeedText(
-              `${jpJson.data.country_name}: ${jpJson.data.level_name} • Switzerland: SBB Transit 99.4% Nominal • ${itJson.data.country_name}: ${itJson.data.level_name}`
+              `${inJson.data.country_name}: ${inJson.data.level_name} • IRCTC Vande Bharat Corridors Nominal • Helpline: 1800-11-1363`
             );
           }
         }
@@ -301,11 +293,11 @@ export function ExploreClient() {
                       className="bg-transparent text-xs font-medium text-on-surface focus:outline-none cursor-pointer pr-2"
                       onChange={(e) => setSearchQuery(e.target.value === "all" ? "" : e.target.value)}
                     >
-                      <option value="all">All Global Zones</option>
-                      <option value="Kyoto">East Asia (Peak Foliage)</option>
-                      <option value="Alps">Central Europe</option>
-                      <option value="Amalfi">Mediterranean Basin</option>
-                      <option value="Oaxaca">Latin America</option>
+                      <option value="all">All Indian Regions</option>
+                      <option value="Jaipur">Rajasthan &amp; Royal Circuit</option>
+                      <option value="Ladakh">Himalayas &amp; Ladakh</option>
+                      <option value="Kerala">Kerala &amp; South India</option>
+                      <option value="Varanasi">Ganga Heritage Belt</option>
                     </select>
                   </div>
 
@@ -471,21 +463,21 @@ export function ExploreClient() {
                                   country: dest.name.split(",")[1]?.trim() ?? null,
                                   category: dest.category,
                                   lat:
-                                    dest.id === "kyoto"
-                                      ? 35.0116
-                                      : dest.id === "swiss-alps"
-                                      ? 46.6863
-                                      : dest.id === "amalfi"
-                                      ? 40.634
-                                      : 17.0732,
+                                    dest.id === "jaipur"
+                                      ? 26.9124
+                                      : dest.id === "ladakh"
+                                      ? 34.1526
+                                      : dest.id === "kerala"
+                                      ? 9.4981
+                                      : 25.3176,
                                   lon:
-                                    dest.id === "kyoto"
-                                      ? 135.7681
-                                      : dest.id === "swiss-alps"
-                                      ? 7.8632
-                                      : dest.id === "amalfi"
-                                      ? 14.6027
-                                      : -96.7266,
+                                    dest.id === "jaipur"
+                                      ? 75.7873
+                                      : dest.id === "ladakh"
+                                      ? 77.5771
+                                      : dest.id === "kerala"
+                                      ? 76.3388
+                                      : 82.9739,
                                 });
                                 setModalOpen(true);
                               }}

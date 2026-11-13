@@ -5,6 +5,11 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { DestinationWeatherForecast } from "@/lib/weather/types";
 import type { ConsularAdvisory } from "@/lib/advisories/types";
+import {
+  evaluateSevereWeatherAlerts,
+  SIMULATED_ALERTS,
+  type SevereWeatherAlert,
+} from "@/lib/weather/alerts";
 import { cacheTelemetryOffline, getCachedTelemetryOffline } from "@/lib/offline/storage";
 import { useOfflineStatus } from "@/lib/offline/use-offline";
 
@@ -18,8 +23,8 @@ type StreamTab = "all" | "weather" | "safety" | "aviation" | "transit";
 
 export function IntelligenceClientView({
   tripId,
-  tripTitle = "Kyoto & Tokyo Autumn Journey 2025",
-  destination = "Kyoto, Japan",
+  tripTitle = "Royal Rajasthan Heritage & Cultural Circuit",
+  destination = "Jaipur, Rajasthan",
 }: IntelligenceClientViewProps) {
   const { isOffline } = useOfflineStatus(tripId);
   const [activeTab, setActiveTab] = useState<StreamTab>("all");
@@ -27,6 +32,15 @@ export function IntelligenceClientView({
   const [advisory, setAdvisory] = useState<ConsularAdvisory | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
+  const [alertSimMode, setAlertSimMode] = useState<"live" | "severe" | "warning" | "advisory" | "none">(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("wanderway_weather_alert_sim");
+      if (stored && ["severe", "warning", "advisory", "none"].includes(stored)) {
+        return stored as "severe" | "warning" | "advisory" | "none";
+      }
+    }
+    return "live";
+  });
 
   const handleRefresh = async () => {
     setIsLoading(true);
@@ -119,6 +133,31 @@ export function IntelligenceClientView({
       isCancelled = true;
     };
   }, [destination]);
+
+  const handleAlertSim = (mode: "live" | "severe" | "warning" | "advisory" | "none") => {
+    setAlertSimMode(mode);
+    if (typeof window !== "undefined") {
+      if (mode === "live") {
+        localStorage.removeItem("wanderway_weather_alert_sim");
+      } else {
+        localStorage.setItem("wanderway_weather_alert_sim", mode);
+      }
+      window.dispatchEvent(
+        new CustomEvent("wanderway:weather-alert-override", {
+          detail: { severity: mode },
+        })
+      );
+    }
+  };
+
+  const activeAlert: SevereWeatherAlert | null = (() => {
+    if (alertSimMode === "none") return null;
+    if (alertSimMode === "severe") return SIMULATED_ALERTS.severe;
+    if (alertSimMode === "warning") return SIMULATED_ALERTS.warning;
+    if (alertSimMode === "advisory") return SIMULATED_ALERTS.advisory;
+    const evaluated = evaluateSevereWeatherAlerts(weather);
+    return evaluated.length > 0 ? evaluated[0] : null;
+  })();
 
   return (
     <div className="flex flex-col gap-8 pb-16">
@@ -250,7 +289,7 @@ export function IntelligenceClientView({
               <span className="text-xs font-bold text-emerald-600">On-Time</span>
             </div>
             <p className="text-[11px] text-on-surface-variant font-medium mt-1">
-              Tokyo Haneda (HND) & Kansai (KIX) normal
+              Delhi (DEL) & Jaipur (JAI) airspace nominal
             </p>
           </div>
         </div>
@@ -267,12 +306,151 @@ export function IntelligenceClientView({
           </div>
           <div>
             <div className="text-2xl font-black text-on-surface flex items-baseline gap-1.5">
-              <span>Shinkansen</span>
+              <span>Vande Bharat</span>
               <span className="text-xs font-bold text-emerald-600">Nominal</span>
             </div>
             <p className="text-[11px] text-on-surface-variant font-medium mt-1">
-              Tokaido line operating strictly on schedule
+              IRCTC Superfast Northern Network operating on schedule
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Severe Weather Real-Time Alert System Console & Live Telemetry */}
+      <div className="flex flex-col gap-4 p-5 sm:p-6 rounded-3xl bg-surface-container-low border border-outline-variant/30 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+              <span className="material-symbols-outlined text-[24px]">crisis_alert</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-on-surface">
+                  Severe Meteorological Alert System
+                </h2>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase ${
+                  activeAlert ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                }`}>
+                  <span className={`size-1.5 rounded-full ${activeAlert ? "bg-red-500 animate-ping" : "bg-emerald-500"}`} />
+                  {activeAlert ? "DASHBOARD BANNER ACTIVE" : "CONDITIONS NOMINAL"}
+                </span>
+              </div>
+              <p className="text-xs text-on-surface-variant">
+                Early-warning meteorological threshold triggers for flash storms, torrential deluges, and gales with auto-banner push.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick links to Dashboard to see banner */}
+          <Link
+            href="/trips"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface transition-colors shrink-0"
+          >
+            <span className="material-symbols-outlined text-[16px] text-primary">dashboard</span>
+            <span>View Dashboard Banner →</span>
+          </Link>
+        </div>
+
+        {/* Active Alert Live Banner Stream */}
+        {activeAlert ? (
+          <div className={`p-4 sm:p-5 rounded-2xl ${activeAlert.bannerClasses.container}`}>
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-[24px] text-white shrink-0 animate-pulse mt-0.5">
+                  {activeAlert.bannerClasses.icon}
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${activeAlert.bannerClasses.badge}`}>
+                      {activeAlert.badge}
+                    </span>
+                    {activeAlert.metricHighlight && (
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/20 text-white font-semibold">
+                        {activeAlert.metricHighlight}
+                      </span>
+                    )}
+                    {activeAlert.impactDates && (
+                      <span className="text-[11px] text-white/80">
+                        Affected Dates: {activeAlert.impactDates.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-black text-white">{activeAlert.title}</h3>
+                  <p className="text-xs text-white/95 mt-1 leading-relaxed">
+                    {activeAlert.message}
+                  </p>
+                  <div className="mt-2 text-xs font-medium bg-black/15 rounded-xl p-2.5 border border-white/10 text-white/90">
+                    <strong className="text-white font-bold">Operational Guidance: </strong>
+                    {activeAlert.recommendedAction}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-surface-container border border-outline-variant/20 flex items-center gap-3 text-xs text-on-surface-variant">
+            <span className="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
+            <span>
+              All meteorological indicators for <strong>{destination}</strong> are currently within safe sightseeing thresholds. No severe rainstorm, typhoon, or wind hazard detected.
+            </span>
+          </div>
+        )}
+
+        {/* Real-Time Simulation and Broadcast Controls */}
+        <div className="pt-2 border-t border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
+            <span className="material-symbols-outlined text-[16px] text-primary">sensors</span>
+            <span>Alert Simulator & Banner Broadcast:</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleAlertSim("live")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                alertSimMode === "live"
+                  ? "bg-primary text-on-primary shadow-xs"
+                  : "bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/30"
+              }`}
+            >
+              📡 Live Radar Feed
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleAlertSim("severe")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                alertSimMode === "severe"
+                  ? "bg-red-600 text-white shadow-xs"
+                  : "bg-surface-container hover:bg-surface-container-high text-red-600 dark:text-red-400 border border-outline-variant/30"
+              }`}
+            >
+              ⛈️ Severe Storm (Red)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleAlertSim("warning")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                alertSimMode === "warning"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "bg-surface-container hover:bg-surface-container-high text-amber-600 dark:text-amber-400 border border-outline-variant/30"
+              }`}
+            >
+              🌧️ Heavy Rain (Amber)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleAlertSim("none")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                alertSimMode === "none"
+                  ? "bg-surface-container-highest text-on-surface font-extrabold border border-outline"
+                  : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/30"
+              }`}
+            >
+              ☀️ Clear Skies
+            </button>
           </div>
         </div>
       </div>
@@ -323,7 +501,7 @@ export function IntelligenceClientView({
                 </div>
               </div>
               <span className="text-[11px] font-mono text-on-surface-variant">
-                Lat: {weather?.latitude ? weather.latitude.toFixed(2) : "35.01"}°N • Lon: {weather?.longitude ? weather.longitude.toFixed(2) : "135.76"}°E
+                Lat: {weather?.latitude ? weather.latitude.toFixed(2) : "26.91"}°N • Lon: {weather?.longitude ? weather.longitude.toFixed(2) : "75.79"}°E
               </span>
             </div>
 
@@ -438,21 +616,21 @@ export function IntelligenceClientView({
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
-                    <span className="font-semibold text-on-surface">Pacific Corridor Air Route</span>
+                    <span className="font-semibold text-on-surface">Golden Triangle Air Corridor</span>
                   </div>
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold">Clear / Smooth</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-600 text-[18px]">flight</span>
-                    <span className="font-semibold text-on-surface">Tokyo Haneda (HND) Runway 34R</span>
+                    <span className="font-semibold text-on-surface">Delhi Indira Gandhi Intl (DEL) T3</span>
                   </div>
                   <span className="text-on-surface-variant font-mono">0 min delay</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary text-[18px]">radar</span>
-                    <span className="font-semibold text-on-surface">Kansai International (KIX)</span>
+                    <span className="font-semibold text-on-surface">Jaipur International (JAI)</span>
                   </div>
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold">Unrestricted</span>
                 </div>
@@ -463,27 +641,27 @@ export function IntelligenceClientView({
             <div className="p-6 rounded-3xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-4">
               <div className="flex items-center gap-2.5">
                 <span className="material-symbols-outlined text-primary text-[22px]">subway</span>
-                <h3 className="text-sm font-bold text-on-surface">Local Transit & Rail Disruption Monitor</h3>
+                <h3 className="text-sm font-bold text-on-surface">Local Transit &amp; Rail Disruption Monitor</h3>
               </div>
               <div className="flex flex-col gap-3 text-xs">
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-600 text-[18px]">speed</span>
-                    <span className="font-semibold text-on-surface">JR Shinkansen Nozomi Line</span>
+                    <span className="font-semibold text-on-surface">IRCTC Vande Bharat Express</span>
                   </div>
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold">On Schedule (0m)</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-amber-600 text-[18px]">info</span>
-                    <span className="font-semibold text-on-surface">Kyoto City Bus #206 (Higashiyama)</span>
+                    <span className="font-semibold text-on-surface">Jaipur Metro &amp; Hawa Mahal Corridor</span>
                   </div>
                   <span className="text-amber-700 dark:text-amber-400 font-bold">Minor Traffic (+8m)</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-600 text-[18px]">directions_walk</span>
-                    <span className="font-semibold text-on-surface">Sagano Romantic Scenic Train</span>
+                    <span className="font-semibold text-on-surface">Ajmer–Jaipur Shatabdi Express</span>
                   </div>
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold">Running Normal</span>
                 </div>
@@ -511,13 +689,13 @@ export function IntelligenceClientView({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Police */}
             <a
-              href={`tel:${advisory?.emergency_contacts.police || "110"}`}
+              href={`tel:${advisory?.emergency_contacts.police || "112"}`}
               className="p-4 rounded-2xl bg-surface-container hover:bg-primary/10 border border-outline-variant/20 hover:border-primary/40 transition-all flex items-center justify-between group"
             >
               <div>
                 <span className="text-[10px] uppercase font-bold text-on-surface-variant">Police Dept</span>
                 <p className="text-lg font-black text-on-surface font-mono group-hover:text-primary">
-                  {advisory?.emergency_contacts.police || "110"}
+                  {advisory?.emergency_contacts.police || "112"}
                 </p>
               </div>
               <span className="size-9 rounded-xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary flex items-center justify-center text-on-surface-variant transition-colors">
@@ -527,13 +705,13 @@ export function IntelligenceClientView({
 
             {/* Ambulance */}
             <a
-              href={`tel:${advisory?.emergency_contacts.ambulance || "119"}`}
+              href={`tel:${advisory?.emergency_contacts.ambulance || "108"}`}
               className="p-4 rounded-2xl bg-surface-container hover:bg-error/10 border border-outline-variant/20 hover:border-error/40 transition-all flex items-center justify-between group"
             >
               <div>
                 <span className="text-[10px] uppercase font-bold text-on-surface-variant">Medical & Ambulance</span>
                 <p className="text-lg font-black text-on-surface font-mono group-hover:text-error">
-                  {advisory?.emergency_contacts.ambulance || "119"}
+                  {advisory?.emergency_contacts.ambulance || "108"}
                 </p>
               </div>
               <span className="size-9 rounded-xl bg-surface-container-high group-hover:bg-error group-hover:text-white flex items-center justify-center text-on-surface-variant transition-colors">
@@ -543,13 +721,13 @@ export function IntelligenceClientView({
 
             {/* Fire */}
             <a
-              href={`tel:${advisory?.emergency_contacts.fire || "119"}`}
+              href={`tel:${advisory?.emergency_contacts.fire || "101"}`}
               className="p-4 rounded-2xl bg-surface-container hover:bg-amber-500/10 border border-outline-variant/20 hover:border-amber-500/40 transition-all flex items-center justify-between group"
             >
               <div>
                 <span className="text-[10px] uppercase font-bold text-on-surface-variant">Fire & Rescue</span>
                 <p className="text-lg font-black text-on-surface font-mono group-hover:text-amber-600">
-                  {advisory?.emergency_contacts.fire || "119"}
+                  {advisory?.emergency_contacts.fire || "101"}
                 </p>
               </div>
               <span className="size-9 rounded-xl bg-surface-container-high group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center text-on-surface-variant transition-colors">
@@ -562,7 +740,7 @@ export function IntelligenceClientView({
               <div>
                 <span className="text-[10px] uppercase font-bold text-on-surface-variant">Tourist Helpline</span>
                 <p className="text-xs font-bold text-on-surface mt-0.5 line-clamp-1">
-                  {advisory?.emergency_contacts.tourist_helpline || "JNTO: +81 3 3201 3331"}
+                  {advisory?.emergency_contacts.tourist_helpline || "Ministry of Tourism: 1800-11-1363"}
                 </p>
               </div>
               <span className="size-9 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">

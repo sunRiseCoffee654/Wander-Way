@@ -31,6 +31,15 @@ export default async function TripBookingsPage(props: {
     trip = tripData;
   }
 
+  if (!trip && tripId.startsWith("mock-")) {
+    trip = {
+      id: tripId,
+      title: "Royal Rajasthan Heritage & Cultural Circuit",
+      destination: "Jaipur, Rajasthan",
+      budget_currency: "INR",
+    };
+  }
+
   // If trip not found in DB, return 404
   if (!trip) {
     notFound();
@@ -45,7 +54,7 @@ export default async function TripBookingsPage(props: {
         tripId={tripId}
         tripTitle={trip.title || `Trip to ${trip.destination}`}
         initialBookings={bookings}
-        defaultCurrency={trip.budget_currency || "USD"}
+        defaultCurrency={trip.budget_currency || "INR"}
       />
     </div>
   );

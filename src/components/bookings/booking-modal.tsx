@@ -27,13 +27,13 @@ const TYPE_CONFIG: Record<
   BookingType,
   { label: string; icon: string; defaultProviderHint: string }
 > = {
-  flight: { label: "Flight", icon: "flight", defaultProviderHint: "e.g. ANA Airlines NH107" },
-  accommodation: { label: "Accommodation", icon: "hotel", defaultProviderHint: "e.g. Gion Ryokan Kyoto" },
-  train: { label: "Train / Rail", icon: "train", defaultProviderHint: "e.g. Shinkansen Nozomi #88" },
-  bus: { label: "Bus / Coach", icon: "directions_bus", defaultProviderHint: "e.g. Highway Express Bus" },
-  activity: { label: "Activity / Tour", icon: "local_activity", defaultProviderHint: "e.g. Tea Ceremony Workshop" },
-  rental: { label: "Rental Vehicle / WiFi", icon: "car_rental", defaultProviderHint: "e.g. Toyota Car Rental / Pocket WiFi" },
-  other: { label: "Other Reservation", icon: "confirmation_number", defaultProviderHint: "e.g. Museum Entry Ticket" },
+  flight: { label: "Flight", icon: "flight", defaultProviderHint: "e.g. IndiGo Airlines 6E-214" },
+  accommodation: { label: "Accommodation", icon: "hotel", defaultProviderHint: "e.g. Taj Rambagh Palace Jaipur" },
+  train: { label: "Train / Rail", icon: "train", defaultProviderHint: "e.g. Vande Bharat Express (IRCTC)" },
+  bus: { label: "Bus / Coach", icon: "directions_bus", defaultProviderHint: "e.g. RSRTC Volvo Sleeper Coach" },
+  activity: { label: "Activity / Tour", icon: "local_activity", defaultProviderHint: "e.g. Amber Fort Heritage & Stepwell Walk" },
+  rental: { label: "Rental Vehicle / WiFi", icon: "car_rental", defaultProviderHint: "e.g. Savaari Innova / Airport WiFi" },
+  other: { label: "Other Reservation", icon: "confirmation_number", defaultProviderHint: "e.g. ASI Monument Entry Ticket" },
 };
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; desc: string }> = {
@@ -45,7 +45,7 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; desc:
   cancelled: { label: "Cancelled", color: "bg-error-container text-on-error-container", desc: "Voided or abandoned" },
 };
 
-const POPULAR_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "INR", "CAD", "AUD", "SGD", "CHF"];
+const POPULAR_CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "SGD", "CHF"];
 
 function minorUnitsToMajor(minor: number, currency: string): string {
   const decimals = CURRENCY_DECIMALS[currency.toUpperCase()] ?? 2;
@@ -67,7 +67,7 @@ function BookingModalInner({
   onClose,
   tripId,
   booking,
-  defaultCurrency = "USD",
+  defaultCurrency = "INR",
   onSaved,
 }: BookingModalProps) {
   const isEditing = Boolean(booking);
@@ -286,7 +286,7 @@ function BookingModalInner({
                   type="text"
                   value={confirmationCode}
                   onChange={(e) => setConfirmationCode(e.target.value)}
-                  placeholder="e.g. NH-884910"
+                  placeholder="e.g. PNR-6E884910"
                   className="w-full pl-10 pr-4 py-3 rounded-2xl bg-surface-container-high border border-outline-variant/30 text-on-surface text-sm placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary uppercase tracking-wider font-mono font-medium"
                 />
               </div>
@@ -351,7 +351,7 @@ function BookingModalInner({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Window Seat 14K, Free breakfast included"
+              placeholder="e.g. Window Seat 14A, Breakfast included"
               className="w-full px-4 py-3 rounded-2xl bg-surface-container-high border border-outline-variant/30 text-on-surface text-sm placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

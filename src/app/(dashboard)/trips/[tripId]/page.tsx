@@ -4,6 +4,9 @@ import type { Route } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ItineraryClientView } from "./_components/itinerary-client-view";
+import { TripWeatherWidget } from "@/components/weather/trip-weather-widget";
+import { SevereWeatherBanner } from "@/components/weather/severe-weather-banner";
+import { getMockRajasthanDays } from "@/lib/itinerary/showcase-days";
 
 export const metadata: Metadata = {
   title: "Itinerary & Route Legs — WanderWay",
@@ -29,6 +32,16 @@ export default async function TripDetailPage(props: {
       .eq("id", tripId)
       .maybeSingle();
     trip = data;
+  }
+
+  if (!trip && tripId.startsWith("mock-")) {
+    trip = {
+      id: tripId,
+      title: "Royal Rajasthan Heritage & Cultural Circuit",
+      destination: "Jaipur, Rajasthan",
+      start_date: "2026-11-11",
+      end_date: "2026-11-16",
+    };
   }
 
   // If trip doesn't exist in database, return 404
@@ -59,6 +72,13 @@ export default async function TripDetailPage(props: {
   const tripTitle = trip.title || `Trip to ${trip.destination}`;
   const tripDestination = trip.destination || "Destination";
 
+  const resolvedDays =
+    days && days.length > 0
+      ? days
+      : tripId.startsWith("mock-")
+      ? getMockRajasthanDays(tripId)
+      : [];
+
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto flex flex-col gap-4">
       {/* Pending Proposal Callout Banner if AI proposal is ready */}
@@ -86,12 +106,27 @@ export default async function TripDetailPage(props: {
         </div>
       )}
 
+      {/* Real-time Severe Weather Alert Banner */}
+      <SevereWeatherBanner
+        destination={tripDestination}
+        tripId={tripId}
+      />
+
+      {/* 5-Day Weather Forecast & Preparation Widget */}
+      <TripWeatherWidget
+        tripId={tripId}
+        tripTitle={tripTitle}
+        destination={tripDestination}
+        startDate={trip.start_date}
+        endDate={trip.end_date}
+      />
+
       {/* Main Itinerary Client View (Days Selector + 60/40 Split + Vector Map) */}
       <ItineraryClientView
         tripId={tripId}
         tripTitle={tripTitle}
         destination={tripDestination}
-        dbDays={days || []}
+        dbDays={resolvedDays}
       />
     </div>
   );

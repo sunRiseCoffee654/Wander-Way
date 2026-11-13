@@ -22,11 +22,11 @@ export default function ProfileSettings({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    full_name: "Elena Rostova",
-    home_location: "San Francisco International (SFO)",
+    full_name: "Aarav Sharma",
+    home_location: "Indira Gandhi International (DEL)",
     preferred_currency: "INR",
     travel_pace: "balanced",
-    phone: "+1 (415) 890-2341",
+    phone: "+91 98765 43210",
     budget_basis: "person" as "person" | "group",
   });
 
@@ -42,7 +42,8 @@ export default function ProfileSettings({
     let mounted = true;
 
     const loadProfile = async () => {
-      if (!userId) return;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      if (!userId || !supabaseUrl || supabaseUrl.includes("your-project.supabase.co")) return;
       const { data, error: err } = await supabase
         .from("profiles")
         .select("*")
@@ -130,7 +131,7 @@ export default function ProfileSettings({
   const handleExportData = () => {
     const exportPayload = {
       traveler: formData.full_name,
-      email: userEmail || "elena.rostova@wanderway.app",
+      email: userEmail || "aarav.sharma@wanderway.in",
       home_location: formData.home_location,
       currency: formData.preferred_currency,
       pace: formData.travel_pace,
@@ -235,7 +236,7 @@ export default function ProfileSettings({
                 <div className="relative shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    alt="Elena Rostova Avatar"
+                    alt="Aarav Sharma Avatar"
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover shadow-xs ring-4 ring-surface-container-lowest"
                     src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
                   />
@@ -249,7 +250,7 @@ export default function ProfileSettings({
                 <div className="flex flex-col gap-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xl font-medium text-on-surface">
-                      {formData.full_name || "Elena Rostova"}
+                      {formData.full_name || "Aarav Sharma"}
                     </span>
                     <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed text-xs font-medium">
                       <span className="material-symbols-outlined text-[14px]">
@@ -259,7 +260,7 @@ export default function ProfileSettings({
                     </span>
                   </div>
                   <span className="text-xs text-on-surface-variant">
-                    Member since October 2022 • 14 countries cataloged
+                    Member since October 2022 • 14 heritage circuits cataloged
                   </span>
                   <div className="flex items-center gap-3 mt-1">
                     <button
@@ -288,7 +289,7 @@ export default function ProfileSettings({
                   <span className="material-symbols-outlined text-secondary text-[20px]">
                     public
                   </span>
-                  USA (Exp. 2031)
+                  India (Exp. 2031)
                 </span>
               </div>
             </div>
@@ -339,7 +340,7 @@ export default function ProfileSettings({
                     className="w-full bg-surface-container-lowest rounded-lg pl-11 pr-4 py-2.5 text-sm text-on-surface shadow-xs focus:outline-none focus:ring-2 focus:ring-primary transition-all border border-outline-variant/40"
                     type="email"
                     readOnly
-                    value={userEmail || "elena.rostova@wanderway.app"}
+                    value={userEmail || "aarav.sharma@wanderway.in"}
                   />
                 </div>
                 <span className="text-[11px] text-on-surface-variant">
@@ -461,20 +462,20 @@ export default function ProfileSettings({
                 <div className="flex flex-wrap items-center gap-4 text-xs">
                   <span className="inline-flex items-center gap-1.5 text-on-surface">
                     <span className="text-on-surface-variant">1 USD =</span>
-                    <span className="font-medium text-primary">148.20 JPY</span>
-                    <span className="text-tertiary text-[10px]">▲ 0.4%</span>
+                    <span className="font-medium text-primary">84.50 INR</span>
+                    <span className="text-tertiary text-[10px]">▲ 0.2%</span>
                   </span>
                   <span className="text-outline-variant">•</span>
                   <span className="inline-flex items-center gap-1.5 text-on-surface">
-                    <span className="text-on-surface-variant">1 USD =</span>
-                    <span className="font-medium text-primary">0.92 EUR</span>
+                    <span className="text-on-surface-variant">1 EUR =</span>
+                    <span className="font-medium text-primary">91.80 INR</span>
                     <span className="text-tertiary text-[10px]">▲ 0.1%</span>
                   </span>
                   <span className="text-outline-variant">•</span>
                   <span className="inline-flex items-center gap-1.5 text-on-surface">
-                    <span className="text-on-surface-variant">1 USD =</span>
-                    <span className="font-medium text-primary">1.54 AUD</span>
-                    <span className="text-secondary text-[10px]">▼ 0.2%</span>
+                    <span className="text-on-surface-variant">1 GBP =</span>
+                    <span className="font-medium text-primary">109.20 INR</span>
+                    <span className="text-secondary text-[10px]">▼ 0.1%</span>
                   </span>
                 </div>
               </div>
@@ -675,8 +676,8 @@ export default function ProfileSettings({
                     </span>
                     <span>
                       You are currently listed as the primary billing lead for{" "}
-                      <strong>&quot;Kyoto &amp; Tokyo Autumn Journey&quot;</strong> and{" "}
-                      <strong>&quot;Swiss Alps Trek 2025&quot;</strong>. Deleting this account will orphan these collaborative boards unless ownership is reassigned to another co-traveler.
+                      <strong>&quot;Royal Rajasthan Heritage Circuit&quot;</strong> and{" "}
+                      <strong>&quot;Ladakh High-Pass Trek 2026&quot;</strong>. Deleting this account will orphan these collaborative boards unless ownership is reassigned to another co-traveler.
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -750,7 +751,7 @@ export default function ProfileSettings({
                       MacBook Pro 16&quot; (This Device)
                     </span>
                     <span className="text-[11px] text-on-surface-variant">
-                      Kyoto itinerary editing active
+                      Jaipur itinerary editing active
                     </span>
                   </div>
                 </div>
@@ -766,7 +767,7 @@ export default function ProfileSettings({
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold">iPhone 15 Pro</span>
                     <span className="text-[11px] text-on-surface-variant">
-                      Synced 4m ago • Tokyo eSIM
+                      Synced 4m ago • Airtel / Jio 5G
                     </span>
                   </div>
                 </div>
@@ -873,7 +874,7 @@ export default function ProfileSettings({
                       Google Account
                     </span>
                     <span className="text-[11px] text-on-surface-variant truncate max-w-[140px]">
-                      {userEmail || "elena.rostova@gmail.com"}
+                      {userEmail || "aarav.sharma@gmail.com"}
                     </span>
                   </div>
                 </div>
@@ -948,7 +949,7 @@ export default function ProfileSettings({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent flex items-end p-3">
                 <span className="text-inverse-on-surface text-xs font-medium">
-                  Active Trip: Kyoto &amp; Tokyo Autumn Journey
+                  Active Trip: Royal Rajasthan Heritage Journey
                 </span>
               </div>
             </div>

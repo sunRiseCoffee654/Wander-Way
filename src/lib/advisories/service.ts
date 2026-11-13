@@ -1,6 +1,31 @@
 import type { ConsularAdvisory } from "./types";
 
 const ADVISORIES_DATABASE: Record<string, ConsularAdvisory> = {
+  india: {
+    country_code: "IN",
+    country_name: "India",
+    level: 1,
+    level_name: "Level 1: Exercise Normal Precautions",
+    badge_color: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    summary:
+      "Major Indian tourism circuits including Rajasthan, Kerala, Goa, and Ladakh welcome millions of visitors safely. Use verified app-based cabs or IRCTC rail, drink bottled/filtered water, and monitor seasonal monsoon or high-altitude advisories.",
+    emergency_contacts: {
+      police: "112",
+      ambulance: "108",
+      fire: "101",
+      tourist_helpline: "1800-11-1363 (Ministry of Tourism 24x7)",
+      consular_emergency: "112 (Integrated Emergency Response)",
+    },
+    entry_requirements: {
+      passport_validity_months: 6,
+      visa_free_tourism_days: 30,
+      schengen_zone: false,
+      mandatory_insurance: false,
+    },
+    safety_score: 92,
+    source: "Ministry of Tourism & Bureau of Immigration India",
+    last_verified: new Date().toISOString(),
+  },
   japan: {
     country_code: "JP",
     country_name: "Japan",
@@ -106,9 +131,29 @@ const ADVISORIES_DATABASE: Record<string, ConsularAdvisory> = {
 /**
  * Resolves destination text to verified consular safety intelligence
  */
-export function getCountryAdvisory(destinationOrCountry: string = "Kyoto, Japan"): ConsularAdvisory {
+export function getCountryAdvisory(destinationOrCountry: string = "Jaipur, India"): ConsularAdvisory {
   const query = destinationOrCountry.toLowerCase();
 
+  if (
+    query.includes("india") ||
+    query.includes("jaipur") ||
+    query.includes("udaipur") ||
+    query.includes("delhi") ||
+    query.includes("mumbai") ||
+    query.includes("kerala") ||
+    query.includes("alleppey") ||
+    query.includes("munnar") ||
+    query.includes("ladakh") ||
+    query.includes("leh") ||
+    query.includes("varanasi") ||
+    query.includes("goa") ||
+    query.includes("hampi") ||
+    query.includes("manali") ||
+    query.includes("rishikesh") ||
+    query.includes("rajasthan")
+  ) {
+    return ADVISORIES_DATABASE.india;
+  }
   if (query.includes("japan") || query.includes("kyoto") || query.includes("tokyo")) {
     return ADVISORIES_DATABASE.japan;
   }

@@ -256,3 +256,119 @@ export function formatMinorUnitsCurrency(
 ): string {
   return formatMinorUnits(Math.round(minorUnits * multiplier), currency, locale);
 }
+
+export type BudgetThresholdLevel = "nominal" | "warning_80" | "critical_95";
+
+export interface BudgetThresholdStatus {
+  level: BudgetThresholdLevel;
+  velocityPercent: number;
+  isWarning80: boolean;
+  isCritical95: boolean;
+  remainingRunwayMajor: number;
+  remainingRunwayMinorUnits: number;
+  totalAllocatedMajor: number;
+  tripLimitMajor: number;
+  title: string;
+  badge: string;
+  message: string;
+  recommendation: string;
+  bannerClasses: {
+    container: string;
+    badge: string;
+    icon: string;
+    progressFill: string;
+    textColor: string;
+  };
+}
+
+/**
+ * Evaluates whether current expenditure has crossed the 80% or 95% budget ceiling thresholds.
+ */
+export function evaluateBudgetThreshold(
+  totalAllocatedMinorUnits: number,
+  tripLimitMinorUnits: number,
+  currency = "INR"
+): BudgetThresholdStatus {
+  const tripLimit = Math.max(1, tripLimitMinorUnits);
+  const rawRatio = (totalAllocatedMinorUnits / tripLimit) * 100;
+  const velocityPercent = Math.round(rawRatio * 10) / 10;
+  const remainingMinor = Math.max(0, tripLimit - totalAllocatedMinorUnits);
+  const remainingMajor = minorUnitsToMajor(remainingMinor);
+  const totalAllocatedMajor = minorUnitsToMajor(totalAllocatedMinorUnits);
+  const tripLimitMajor = minorUnitsToMajor(tripLimit);
+
+  if (velocityPercent >= 95) {
+    return {
+      level: "critical_95",
+      velocityPercent,
+      isWarning80: true,
+      isCritical95: true,
+      remainingRunwayMajor: remainingMajor,
+      remainingRunwayMinorUnits: remainingMinor,
+      totalAllocatedMajor,
+      tripLimitMajor,
+      title: "Critical Budget Depletion: 95%+ Ceiling Reached",
+      badge: "CRITICAL 95% THRESHOLD",
+      message: `You have allocated ${velocityPercent}% of your total trip budget. Only ${formatMinorUnits(remainingMinor, currency)} remains before exceeding your spending ceiling.`,
+      recommendation:
+        "Contingency reserve is critically depleted. Review upcoming discretionary bookings, postpone optional tours, or increase your trip limit ceiling.",
+      bannerClasses: {
+        container:
+          "bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white border border-red-300/40 shadow-lg shadow-red-950/25",
+        badge: "bg-red-950/70 text-red-100 border border-red-300/40",
+        icon: "error",
+        progressFill: "bg-gradient-to-r from-orange-500 to-red-600",
+        textColor: "text-red-600 dark:text-red-400",
+      },
+    };
+  }
+
+  if (velocityPercent >= 80) {
+    return {
+      level: "warning_80",
+      velocityPercent,
+      isWarning80: true,
+      isCritical95: false,
+      remainingRunwayMajor: remainingMajor,
+      remainingRunwayMinorUnits: remainingMinor,
+      totalAllocatedMajor,
+      tripLimitMajor,
+      title: "Budget Threshold Warning: 80% Ceiling Reached",
+      badge: "80% THRESHOLD WARNING",
+      message: `You have utilized ${velocityPercent}% of your allocated budget. You have ${formatMinorUnits(remainingMinor, currency)} remaining in your safety buffer.`,
+      recommendation:
+        "High budget velocity reached. Ensure all essential accommodation and transit are finalized before committing to non-essential expenses.",
+      bannerClasses: {
+        container:
+          "bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white border border-amber-300/40 shadow-md shadow-amber-950/20",
+        badge: "bg-amber-950/70 text-amber-100 border border-amber-300/40",
+        icon: "warning",
+        progressFill: "bg-gradient-to-r from-amber-500 to-orange-500",
+        textColor: "text-amber-600 dark:text-amber-400",
+      },
+    };
+  }
+
+  return {
+    level: "nominal",
+    velocityPercent,
+    isWarning80: false,
+    isCritical95: false,
+    remainingRunwayMajor: remainingMajor,
+    remainingRunwayMinorUnits: remainingMinor,
+    totalAllocatedMajor,
+    tripLimitMajor,
+    title: "Nominal Spending Velocity",
+    badge: "HEALTHY BUFFER",
+    message: `${velocityPercent}% of trip budget allocated with ${formatMinorUnits(remainingMinor, currency)} uncommitted runway.`,
+    recommendation: "Spending pacing is healthy and within optimal parameters.",
+    bannerClasses: {
+      container: "bg-surface-container border border-outline-variant/30 text-on-surface",
+      badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+      icon: "check_circle",
+      progressFill: "bg-primary",
+      textColor: "text-emerald-600 dark:text-emerald-400",
+    },
+  };
+}
+

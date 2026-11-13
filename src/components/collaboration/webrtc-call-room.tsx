@@ -341,12 +341,12 @@ export function WebRTCCallRoom({
 
   // Add a simulated companion for testing if alone
   const addSimulatedCompanion = () => {
-    const simId = `sim-elena-${Date.now()}`;
+    const simId = `sim-priya-${Date.now()}`;
     setPeers((prev) => ({
       ...prev,
       [simId]: {
         id: simId,
-        name: "Elena Rostova",
+        name: "Priya Nair",
         avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",
         isVideoOff: false,
       },

@@ -26,7 +26,7 @@ export async function POST(request: Request, context: RouteParams) {
       return NextResponse.json({ error: "Invalid trip ID format" }, { status: 400 });
     }
 
-    let destination = body.destination || "Kyoto, Japan";
+    let destination = body.destination || "Jaipur, Rajasthan";
     let startDate = body.startDate;
     let endDate = body.endDate;
     const activities: string[] = body.activities || [];

@@ -287,7 +287,7 @@ export function LoginForm({ onSuccess, currentUserEmail, nextPath }: LoginFormPr
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="elena.rostova@wanderway.app"
+                            placeholder="aarav.sharma@wanderway.in"
                             className="w-full bg-surface-container-low focus:bg-surface text-on-surface placeholder:text-on-surface-variant/70 pl-11 pr-4 py-3 rounded-xl text-sm outline-none transition-all shadow-inner focus:ring-2 focus:ring-primary"
                           />
                         </div>
@@ -389,7 +389,7 @@ export function LoginForm({ onSuccess, currentUserEmail, nextPath }: LoginFormPr
                 landscape
               </span>
               <span className="text-xs tracking-tight">
-                Alpine Summit, Monte Baldo • 2,218m Elevation
+                Himalayan Ridge, Khardung La • 5,359m Elevation
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -401,7 +401,7 @@ export function LoginForm({ onSuccess, currentUserEmail, nextPath }: LoginFormPr
                   RAW
                 </span>
               </div>
-              <span className="text-xs text-white/80">Captured over sea of clouds</span>
+              <span className="text-xs text-white/80">Captured over Himalayan passes</span>
             </div>
           </div>
         </div>

@@ -57,7 +57,7 @@ export function BookingsClientView({
   tripId,
   tripTitle = "Trip Reservations",
   initialBookings,
-  defaultCurrency = "USD",
+  defaultCurrency = "INR",
 }: BookingsClientViewProps) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [categoryFilter, setCategoryFilter] = useState<BookingType | "all">("all");

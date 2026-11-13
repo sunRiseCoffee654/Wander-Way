@@ -132,8 +132,9 @@ export function VectorItineraryMap({
     if (!mapContainerRef.current || !webGlSupported) return;
 
     const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
+    const hasValidKey = Boolean(apiKey && !apiKey.startsWith("your_") && apiKey !== "undefined");
     const styleUrl =
-      apiKey && !isOffline
+      hasValidKey && !isOffline
         ? `https://maps.geoapify.com/v1/styles/osm-bright-smooth/style.json?apiKey=${apiKey}`
         : OFFLINE_FALLBACK_STYLE;
 
@@ -141,7 +142,7 @@ export function VectorItineraryMap({
     const firstWp = waypoints[0];
     const initialCenter: [number, number] = firstWp
       ? [firstWp.lng, firstWp.lat]
-      : [135.7681, 35.0116];
+      : [75.7873, 26.9124];
 
     let map: maplibregl.Map;
     try {

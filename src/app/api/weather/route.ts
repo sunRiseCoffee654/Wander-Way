@@ -4,7 +4,7 @@ import { getDestinationWeather } from "@/lib/weather/service";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const destination = searchParams.get("destination") || "Kyoto, Japan";
+    const destination = searchParams.get("destination") || "Jaipur, Rajasthan";
     const latStr = searchParams.get("lat");
     const lonStr = searchParams.get("lon");
 

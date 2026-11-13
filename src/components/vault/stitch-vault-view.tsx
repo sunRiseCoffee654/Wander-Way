@@ -97,7 +97,7 @@ export function StitchVaultView({
           cat = doc.category.toLowerCase() as VaultDocCategory;
         } else if (lowerTitle.includes("flight") || lowerTitle.includes("boarding") || lowerTitle.includes("ticket")) {
           cat = "flights";
-        } else if (lowerTitle.includes("hotel") || lowerTitle.includes("ryokan") || lowerTitle.includes("stay")) {
+        } else if (lowerTitle.includes("hotel") || lowerTitle.includes("haveli") || lowerTitle.includes("palace") || lowerTitle.includes("resort") || lowerTitle.includes("ryokan") || lowerTitle.includes("stay")) {
           cat = "hotels";
         } else if (lowerTitle.includes("insurance") || lowerTitle.includes("policy")) {
           cat = "insurance";
@@ -140,6 +140,7 @@ export function StitchVaultView({
   const isSwiss = destination.toLowerCase().includes("switzerland") || destination.toLowerCase().includes("interlaken") || destination.toLowerCase().includes("alps");
   const isItaly = destination.toLowerCase().includes("italy") || destination.toLowerCase().includes("amalfi") || destination.toLowerCase().includes("rome");
   const isMexico = destination.toLowerCase().includes("mexico") || destination.toLowerCase().includes("oaxaca");
+  const isJapan = destination.toLowerCase().includes("japan") || destination.toLowerCase().includes("kyoto") || destination.toLowerCase().includes("tokyo");
 
   const emergencyInfo = isSwiss
     ? {
@@ -165,12 +166,20 @@ export function StitchVaultView({
         third: { label: "Angeles Verdes", dial: "078", href: "tel:078", icon: "support_agent" },
         embassy: { name: "U.S. Embassy Mexico City", address: "Paseo de la Reforma 305, CDMX", phone: "+525585262561" },
       }
-    : {
+    : isJapan
+    ? {
         regionName: "Japan",
         police: { label: "Japan Police", dial: "110", href: "tel:110", icon: "local_police" },
         medical: { label: "Ambulance • Fire", dial: "119", href: "tel:119", icon: "ambulance" },
         third: { label: "Tourist Helpline (EN)", dial: "050-3816-2720", href: "tel:05038162720", icon: "support_agent" },
         embassy: { name: "U.S. Embassy Tokyo", address: "1-10-5 Akasaka, Minato-ku, Tokyo", phone: "+81332245000" },
+      }
+    : {
+        regionName: "India",
+        police: { label: "Emergency Police", dial: "112", href: "tel:112", icon: "local_police" },
+        medical: { label: "Ambulance • Fire", dial: "108", href: "tel:108", icon: "ambulance" },
+        third: { label: "Tourism Helpline (24x7)", dial: "1800-11-1363", href: "tel:1800111363", icon: "support_agent" },
+        embassy: { name: "Ministry of Tourism Assistance", address: "C-1 Hutments, Dalhousie Road, New Delhi", phone: "+911123311237" },
       };
 
   const handleSync = () => {
@@ -279,10 +288,10 @@ export function StitchVaultView({
         {/* LEFT PANEL: Live Travel Alert Inbox (Col 7 / ~60%) */}
         <section className="lg:col-span-7 flex flex-col gap-5">
           {/* Section Header & Filter Chips */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-2 h-6 bg-primary rounded-full" />
-              <div>
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-2 h-6 bg-primary rounded-full shrink-0" />
+              <div className="min-w-0">
                 <h2 className="text-xl font-semibold text-on-surface tracking-tight">
                   Live Intelligence Stream
                 </h2>
@@ -293,7 +302,7 @@ export function StitchVaultView({
             </div>
 
             {/* Alert Category Quick Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center flex-wrap gap-1.5 shrink-0">
               {(
                 [
                   { id: "all", label: "All (4)" },
@@ -306,7 +315,7 @@ export function StitchVaultView({
                 <button
                   key={chip.id}
                   onClick={() => setStreamFilter(chip.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                     streamFilter === chip.id
                       ? "bg-secondary-container text-on-secondary-container font-semibold"
                       : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
@@ -334,14 +343,14 @@ export function StitchVaultView({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-on-surface">
-                          ANA Flight NH107
+                          IndiGo Flight 6E-214
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed text-[11px] font-medium">
                           On Time
                         </span>
                       </div>
                       <span className="text-xs text-on-surface-variant">
-                        San Francisco (SFO) → Tokyo Haneda (HND)
+                        New Delhi (DEL) → Jaipur (JAI)
                       </span>
                     </div>
                   </div>
@@ -356,14 +365,14 @@ export function StitchVaultView({
                     <span className="text-[10px] text-on-surface-variant uppercase tracking-wider">
                       Departure Gate
                     </span>
-                    <span className="text-sm font-bold text-primary">Gate G98</span>
+                    <span className="text-sm font-bold text-primary">Gate B14</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] text-on-surface-variant uppercase tracking-wider">
                       Terminal
                     </span>
                     <span className="text-sm font-bold text-on-surface">
-                      Terminal 1 (Intl)
+                      Terminal 3 (Dom)
                     </span>
                   </div>
                   <div className="flex flex-col">
@@ -371,7 +380,7 @@ export function StitchVaultView({
                       Est. Touchdown
                     </span>
                     <span className="text-sm font-bold text-tertiary">
-                      14:55 JST (+1)
+                      10:45 IST
                     </span>
                   </div>
                 </div>
@@ -385,11 +394,11 @@ export function StitchVaultView({
                       check_circle
                     </span>
                     <span className="text-xs">
-                      Source: FlightAware Verified Provider
+                      Source: DGCA / FlightAware Verified Provider
                     </span>
                   </div>
                   <button
-                    onClick={() => setActiveQrDoc("ANA Flight NH107 Radar: FL340 over North Pacific • Mach 0.84")}
+                    onClick={() => setActiveQrDoc("IndiGo Flight 6E-214 Radar: FL320 over Aravalli Corridor • Mach 0.78")}
                     className="text-xs text-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     Live Air Radar
@@ -1135,7 +1144,7 @@ export function StitchVaultView({
                   required
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="e.g. Flight Boarding Pass NH107"
+                  placeholder="e.g. IndiGo Boarding Pass 6E-214"
                   className="w-full px-4 py-2.5 rounded-2xl bg-surface-container border border-outline-variant/30 text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>

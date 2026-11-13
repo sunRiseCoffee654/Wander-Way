@@ -109,7 +109,12 @@ export async function generatePackingRecommendations(
   }
 
   // Fallback if no API key or demo destination
-  if (!apiKey || apiKey === "dummy" || input.destination.toLowerCase().includes("kyoto")) {
+  if (!apiKey || apiKey === "dummy") {
+    return input.destination.toLowerCase().includes("kyoto")
+      ? getKyotoDemoPacking(liveWeather)
+      : getIndiaDemoPacking(input.destination, liveWeather);
+  }
+  if (input.destination.toLowerCase().includes("kyoto")) {
     return getKyotoDemoPacking(liveWeather);
   }
 
@@ -178,8 +183,106 @@ Make sure to recommend:
     return parsed;
   } catch (err) {
     console.warn("Gemini packing generation failed, falling back to curated destination packing:", err);
-    return getKyotoDemoPacking(liveWeather);
+    return input.destination.toLowerCase().includes("kyoto")
+      ? getKyotoDemoPacking(liveWeather)
+      : getIndiaDemoPacking(input.destination, liveWeather);
   }
+}
+
+/**
+ * High-fidelity fallback for Indian travel circuits, grounded in live weather when available
+ */
+export function getIndiaDemoPacking(
+  destination: string = "Jaipur, Rajasthan",
+  liveWeather?: DestinationWeatherForecast | null
+): PackingAssistantResponse {
+  const rainRisk = liveWeather?.rain_risk || "low";
+  const tempRange = liveWeather?.daily?.[0]
+    ? `${liveWeather.daily[0].temperature_min}°C - ${liveWeather.daily[0].temperature_max}°C`
+    : "18°C - 29°C (64°F - 84°F)";
+  const condition = liveWeather?.condition_text || "Warm golden afternoons, cool heritage evenings";
+
+  return {
+    summary: `${destination} offers sunlit heritage fortwalks, bustling bazaars, and sacred temple courtyards that reward breathable cotton layers and easy slip-off footwear.`,
+    weather_overview: {
+      expected_conditions: condition,
+      temperature_range: tempRange,
+      rain_risk: rainRisk,
+      source: liveWeather?.source || "Open-Meteo Global Meteorological Feed",
+    },
+    items: [
+      {
+        item_name: "Compact UV & Rain Umbrella",
+        category: "weather_climate",
+        reason: `Shields against midday Rajasthan sun and unexpected showers (${liveWeather?.precipitation_probability ?? 20}% risk) during open palace courtyard walks.`,
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Light Linen Jacket or Breathable Cotton Overshirt",
+        category: "weather_climate",
+        reason: "Provides sun protection during midday transit and warmth once desert or lakeside evenings cool down.",
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Wide-Brim Sun Hat & SPF 50+ Sunscreen",
+        category: "weather_climate",
+        reason: "High UV reflection across sandstone ramparts at Amber Fort, City Palace, and Hawa Mahal.",
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Slip-On Cushioned Walking Shoes",
+        category: "footwear_gear",
+        reason: "Many temples, stepwells, and haveli sanctuaries require removing shoes at the entrance.",
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Lightweight 20L Heritage Daypack",
+        category: "footwear_gear",
+        reason: "Carries a stainless water bottle, shawl, power bank, and ASI monument tickets comfortably.",
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Modest Breathable Kurta / Cotton Attire",
+        category: "clothing_attire",
+        reason: "Light natural fibers keep you cool while meeting shoulder-and-knee dress codes at religious landmarks.",
+        quantity: 4,
+        is_essential: true,
+      },
+      {
+        item_name: "Type C / D / M India Power Plug Adapter (230V)",
+        category: "electronics_adapters",
+        reason: "Indian sockets use rounded 3-pin Type D/M (large & small) or European Type C plugs at 230V / 50Hz.",
+        quantity: 2,
+        is_essential: true,
+      },
+      {
+        item_name: "10,000mAh Portable Power Bank",
+        category: "electronics_adapters",
+        reason: "Keeps your phone charged for UPI payments, DigiYatra boarding passes, and offline map navigation.",
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Small ₹100/₹50 Cash Pouch + UPI-Ready Phone",
+        category: "essentials_health",
+        reason: "UPI works almost everywhere across India, while small ₹ notes are useful for auto-rickshaws, tips, and bazaar crafts.",
+        quantity: 1,
+        is_essential: true,
+      },
+      {
+        item_name: "Electrolyte Packets (ORS) & Hand Sanitizer",
+        category: "essentials_health",
+        reason: "Maintains hydration during warm sightseeing afternoons and before sampling local street food.",
+        quantity: 1,
+        is_essential: true,
+      },
+    ],
+  };
 }
 
 /**

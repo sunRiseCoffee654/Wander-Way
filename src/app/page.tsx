@@ -37,7 +37,7 @@ export default async function HomePage() {
   return (
     <StitchHomeLauncher
       userEmail={user?.email || null}
-      userName={profile?.full_name || (user?.email ? user.email.split("@")[0] : "Elena Rostova")}
+      userName={profile?.full_name || (user?.email ? user.email.split("@")[0] : "Aarav Sharma")}
       userAvatar={profile?.avatar_url || undefined}
       dbTrips={dbTrips}
     />

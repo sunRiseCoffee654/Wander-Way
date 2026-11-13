@@ -1,0 +1,7 @@
+{
+  "name": "WanderWay",
+  "description": "Grounded, editable travel planning with budget intelligence, real-world coordinates, and offline companion support.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

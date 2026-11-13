@@ -219,7 +219,6 @@ export async function draftCandidatePlan(
   input: TripGenerationInput,
 ): Promise<{ plan: CandidatePlan; model: string; promptVersion: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = getGeminiModel();
 
   if (!apiKey) {
     console.info(`[draftCandidatePlan] GEMINI_API_KEY not set. Using destination synthesizer for ${input.destination}.`);

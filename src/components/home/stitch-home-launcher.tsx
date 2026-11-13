@@ -102,8 +102,8 @@ export function parsePartyAndBudget(
 
 export function StitchHomeLauncher({
   userEmail,
-  userName = "Traveler",
-  userAvatar,
+  userName = "Aarav Sharma",
+  userAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80",
   dbTrips,
 }: StitchHomeLauncherProps) {
   const router = useRouter();
@@ -122,7 +122,7 @@ export function StitchHomeLauncher({
     },
     { scope: heroRef }
   );
-  const [destination, setDestination] = useState("Kyoto & Osaka, Japan");
+  const [destination, setDestination] = useState("Jaipur & Udaipur, Rajasthan");
   const [startDate, setStartDate] = useState("2026-11-14");
   const [endDate, setEndDate] = useState("2026-11-21");
   const [travelers, setTravelers] = useState(2);
@@ -497,37 +497,37 @@ export function StitchHomeLauncher({
                   type="button"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setDestination("Dolomites Traverse, Italy")}
+                  onClick={() => setDestination("Jaipur & Udaipur, Rajasthan")}
                   className="px-3 py-1 rounded-full bg-surface-container hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors text-[11px] font-medium cursor-pointer"
                 >
-                  Alpine Hiking
+                  Rajasthan Palaces
                 </motion.button>
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setDestination("Tokyo & Hakone, Japan")}
+                  onClick={() => setDestination("Alleppey & Munnar, Kerala")}
                   className="px-3 py-1 rounded-full bg-surface-container hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors text-[11px] font-medium cursor-pointer"
                 >
-                  Bullet Train Gastronomy
+                  Kerala Backwaters
                 </motion.button>
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setDestination("Reykjavik & Vik, Iceland")}
+                  onClick={() => setDestination("Leh & Pangong Tso, Ladakh")}
                   className="px-3 py-1 rounded-full bg-surface-container hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors text-[11px] font-medium cursor-pointer"
                 >
-                  Glacier Explorer
+                  Ladakh High Passes
                 </motion.button>
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setDestination("Amalfi & Capri, Italy")}
+                  onClick={() => setDestination("Varanasi & Rishikesh, India")}
                   className="px-3 py-1 rounded-full bg-surface-container hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors text-[11px] font-medium cursor-pointer"
                 >
-                  Mediterranean Coast
+                  Varanasi &amp; Ganga
                 </motion.button>
               </div>
             </div>
@@ -634,7 +634,7 @@ export function StitchHomeLauncher({
                     Live Intel &amp; Encrypted Vault
                   </h3>
                   <p className="text-xs text-on-surface-variant leading-relaxed">
-                    Proactive alerts for Shinkansen strikes, pass disruptions, and mountain storms. Keep bookings, passes, and health forms offline and secure.
+                    Proactive alerts for IRCTC Vande Bharat delays, monsoon road advisories, and Himalayan pass alerts. Keep bookings, passes, and ID proofs offline and secure.
                   </p>
                 </div>
               </div>
@@ -698,14 +698,14 @@ export function StitchHomeLauncher({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Journey 1: Dolomites */}
+            {/* Journey 1: Royal Rajasthan */}
             <div className="flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group border border-surface-container-high/30">
               <div className="relative h-48 w-full overflow-hidden bg-surface-container">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="Rugged sunlit limestone spires of the Italian Dolomites"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjtYGr4kiF1VSgnCVHamPbpV_5zHHQ4C-vIbDTHNTmWTwXDPJpGNhL4hRTT60U-ZZ9KRHEAqSU1jaOgogtIeri4aqA4VeSIifYOX5QjMvcLAoGyPF9g6N1lRN65xKvtyKw6rMQfA8BjR-UT9pJtnswLr4r_20oW-eBZYszq0hXnLWyykt6rqzhkk9fAHcqHyyJMPM0Y7gKCw5aVS9CmwjJxbV-7_neSQMF03Sy3mwj"
+                  alt="Amber Fort and sandstone palaces of Jaipur bathed in golden Rajasthani sunlight"
+                  src="/images/destinations/jaipur.jpg"
                 />
                 <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/85 dark:bg-black/60 backdrop-blur-xl border border-white/40 dark:border-white/15 text-on-surface text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
                   <span className="material-symbols-outlined text-secondary text-[14px]">done_all</span>
@@ -718,26 +718,26 @@ export function StitchHomeLauncher({
               <div className="p-5 flex flex-col justify-between flex-1 gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-medium">
-                    <span className="material-symbols-outlined text-[16px] text-tertiary">hiking</span>
-                    <span>Hiking &amp; Scenic Vistas</span>
+                    <span className="material-symbols-outlined text-[16px] text-tertiary">fort</span>
+                    <span>Heritage &amp; Palaces</span>
                   </div>
                   <h3 className="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                    Dolomites Alpine Traverse
+                    Royal Rajasthan Heritage Circuit
                   </h3>
                   <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
-                    From Cortina d&apos;Ampezzo to Val Gardena via legendary Rifugio huts and panoramic cable cars.
+                    From Jaipur&apos;s Amber Fort and Hawa Mahal to Udaipur&apos;s City Palace lakes and Rajasthani havelis.
                   </p>
                 </div>
                 <div className="pt-3 flex items-center justify-between border-t border-surface-container">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-outline font-medium">Est. Budget</span>
                     <span className="text-xs font-bold text-on-surface">
-                      $1,420 <span className="font-normal text-on-surface-variant">/person</span>
+                      ₹28,500 <span className="font-normal text-on-surface-variant">/person</span>
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleSelectJourney("Dolomites Alpine Traverse")}
+                    onClick={() => handleSelectJourney("Jaipur & Udaipur, Rajasthan")}
                     className="px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-colors cursor-pointer"
                   >
                     Explore
@@ -746,14 +746,14 @@ export function StitchHomeLauncher({
               </div>
             </div>
 
-            {/* Journey 2: Kyoto & Nara */}
+            {/* Journey 2: Kerala Backwaters & Munnar */}
             <div className="flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group border border-surface-container-high/30">
               <div className="relative h-48 w-full overflow-hidden bg-surface-container">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="Peaceful Zen rock garden and vermilion wooden torii gates at a historic Kyoto sanctuary"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9e6MWMCnwrzJisLJobEKBXBT1WvQGa1E6u3g5umYKv6qd6GYFVJ-rXS81YVHwNWXQqqc5LJwgTg8m14iASqK_PMS4UqA3Yc6tgSSjHfkkRNx52Q8skhXKwTO7p_m7GzyEygMg3mN1xgtp3v1jx1oumVH0B_tH_WXXKBjCqcp8QwkRL-asYNW_P3KWeakPE4hz1UULXCqaChi3uMN0YO622vYwywm1uoZrrwH6yDyF"
+                  alt="Palm-fringed Kerala backwaters and emerald tea plantations of Munnar"
+                  src="/images/destinations/kerala.jpg"
                 />
                 <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/85 dark:bg-black/60 backdrop-blur-xl border border-white/40 dark:border-white/15 text-on-surface text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
                   <span className="material-symbols-outlined text-secondary text-[14px]">price_check</span>
@@ -766,26 +766,26 @@ export function StitchHomeLauncher({
               <div className="p-5 flex flex-col justify-between flex-1 gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-medium">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">temple_buddhist</span>
-                    <span>Culture &amp; Culinary</span>
+                    <span className="material-symbols-outlined text-[16px] text-secondary">spa</span>
+                    <span>Backwaters &amp; Tea Estates</span>
                   </div>
                   <h3 className="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                    Kyoto &amp; Nara Heritage Trail
+                    Kerala Backwaters &amp; Munnar
                   </h3>
                   <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
-                    Ancient shrines, tea ceremony workshops, bamboo paths, and curated kaiseki dining spots.
+                    Alleppey kettuvallam houseboats, misty Munnar tea gardens, spice farms, and Kochi heritage walks.
                   </p>
                 </div>
                 <div className="pt-3 flex items-center justify-between border-t border-surface-container">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-outline font-medium">Est. Budget</span>
                     <span className="text-xs font-bold text-on-surface">
-                      $1,150 <span className="font-normal text-on-surface-variant">/person</span>
+                      ₹34,000 <span className="font-normal text-on-surface-variant">/person</span>
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleSelectJourney("Kyoto & Nara Heritage Trail")}
+                    onClick={() => handleSelectJourney("Alleppey & Munnar, Kerala")}
                     className="px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-colors cursor-pointer"
                   >
                     Explore
@@ -794,14 +794,14 @@ export function StitchHomeLauncher({
               </div>
             </div>
 
-            {/* Journey 3: Icelandic Ring Road */}
+            {/* Journey 3: Ladakh & Leh Loop */}
             <div className="flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group border border-surface-container-high/30">
               <div className="relative h-48 w-full overflow-hidden bg-surface-container">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="Epic Icelandic waterfall cascading over volcanic basalt columns"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCd1BPCuA_W0NI5NFEi393gzdjD13_UlvFXU3CZ5RPdrWsMbHXztClz3HXoZuLf_Mgklz9jIqDbkjqzKFpDQFC5z8zEvDjQ5kV_-6U4KuM8Qqhp2TQd6AEW1Ozt-CRffL5rt5wscAZklOK7_Zv3xNIvWy6DFgo983yVeFO7JHpnGKuJAdAdJhPvv2EyM3ajO9y94TjYoGmVLYjf9QR1gtToYbpPiOFhjndrr0neLT_0"
+                  alt="High-altitude turquoise waters of Pangong Tso ringed by snowy Ladakh peaks"
+                  src="/images/destinations/ladakh.jpg"
                 />
                 <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/85 dark:bg-black/60 backdrop-blur-xl border border-white/40 dark:border-white/15 text-on-surface text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
                   <span className="material-symbols-outlined text-secondary text-[14px]">air</span>
@@ -815,25 +815,25 @@ export function StitchHomeLauncher({
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-medium">
                     <span className="material-symbols-outlined text-[16px] text-primary">ac_unit</span>
-                    <span>Adventure &amp; Glaciers</span>
+                    <span>Himalayas &amp; High Passes</span>
                   </div>
                   <h3 className="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                    Icelandic Ring Road Expedition
+                    Ladakh &amp; Leh High-Altitude Loop
                   </h3>
                   <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
-                    Vast volcanic plains, diamond ice beaches, geothermal hot springs, and auroral dark-sky camps.
+                    Khardung La mountain pass, Pangong Tso azure shoreline, Nubra Valley dunes, and Thiksey Monastery.
                   </p>
                 </div>
                 <div className="pt-3 flex items-center justify-between border-t border-surface-container">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-outline font-medium">Est. Budget</span>
                     <span className="text-xs font-bold text-on-surface">
-                      $2,280 <span className="font-normal text-on-surface-variant">/person</span>
+                      ₹42,500 <span className="font-normal text-on-surface-variant">/person</span>
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleSelectJourney("Icelandic Ring Road Expedition")}
+                    onClick={() => handleSelectJourney("Leh & Pangong Tso, Ladakh")}
                     className="px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-colors cursor-pointer"
                   >
                     Explore
@@ -842,14 +842,14 @@ export function StitchHomeLauncher({
               </div>
             </div>
 
-            {/* Journey 4: Amalfi Coast */}
+            {/* Journey 4: Varanasi & Rishikesh */}
             <div className="flex flex-col bg-surface-container-lowest rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group border border-surface-container-high/30">
               <div className="relative h-48 w-full overflow-hidden bg-surface-container">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt="Colorful cliffside pastel houses of Positano overlooking Mediterranean Sea"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkCTU0HqRlWsDcigMZMq4GB3Lwu9jvQupirwOymCmWG1MW53Gk4qWNlRXfpqhM0t6a72hV_2vsRJ5OgVkDRedbl2AVCN9y-DaMCPaWapMU966TEVgydUQ_L39vCcWLPwLsNyWwetWlED_3RB86QFnw8Y1UMGYlwxulmbXJHclWGC9elZVtKk5ouIgBGLuLgMFPcbjO-0oFhCpmNU05JcfyZa4Y8bdU5Fu-QydPGlH2"
+                  alt="Ancient sandstone ghats glowing with evening lamps along the Ganga"
+                  src="/images/destinations/varanasi.jpg"
                 />
                 <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/85 dark:bg-black/60 backdrop-blur-xl border border-white/40 dark:border-white/15 text-on-surface text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
                   <span className="material-symbols-outlined text-secondary text-[14px]">star</span>
@@ -862,26 +862,26 @@ export function StitchHomeLauncher({
               <div className="p-5 flex flex-col justify-between flex-1 gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-medium">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">sailing</span>
-                    <span>Coastal &amp; Leisure</span>
+                    <span className="material-symbols-outlined text-[16px] text-secondary">temple_hindu</span>
+                    <span>Ghats &amp; Himalayan Foothills</span>
                   </div>
                   <h3 className="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                    Amalfi Coast Panoramic Escape
+                    Varanasi &amp; Rishikesh Spiritual Trail
                   </h3>
                   <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
-                    Cliffside terraces, private ferry crossings between Capri &amp; Ravello, and cliff walk trails.
+                    Sunrise boat rides on the Ganga, Dashashwamedh evening Aarti, and Rishikesh riverside retreats.
                   </p>
                 </div>
                 <div className="pt-3 flex items-center justify-between border-t border-surface-container">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-outline font-medium">Est. Budget</span>
                     <span className="text-xs font-bold text-on-surface">
-                      $1,650 <span className="font-normal text-on-surface-variant">/person</span>
+                      ₹19,800 <span className="font-normal text-on-surface-variant">/person</span>
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleSelectJourney("Amalfi Coast Panoramic Escape")}
+                    onClick={() => handleSelectJourney("Varanasi & Rishikesh, India")}
                     className="px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-colors cursor-pointer"
                   >
                     Explore
@@ -925,7 +925,7 @@ export function StitchHomeLauncher({
                 <span className="material-symbols-outlined text-primary text-[18px]">tune</span>
                 <div className="flex flex-col text-[11px]">
                   <span className="font-semibold text-on-surface">Pace: Balanced (3 places/day)</span>
-                  <span className="text-on-surface-variant">Interests: Architecture, Soba noodles</span>
+                  <span className="text-on-surface-variant">Interests: Heritage forts, Rajasthani thali</span>
                 </div>
               </div>
             </div>
@@ -947,8 +947,8 @@ export function StitchHomeLauncher({
               <div className="w-full p-2.5 rounded-xl bg-surface-container text-left flex items-center gap-2.5 mt-auto">
                 <span className="material-symbols-outlined text-secondary text-[18px]">transfer_within_a_station</span>
                 <div className="flex flex-col text-[11px]">
-                  <span className="font-semibold text-on-surface">Auto-computed Shinkansen leg</span>
-                  <span className="text-on-surface-variant">2h 15m · ¥14,200 verified ticket</span>
+                  <span className="font-semibold text-on-surface">Auto-computed Vande Bharat leg</span>
+                  <span className="text-on-surface-variant">4h 15m · ₹1,850 IRCTC verified fare</span>
                 </div>
               </div>
             </div>
@@ -1004,7 +1004,7 @@ export function StitchHomeLauncher({
                     <span className="material-symbols-outlined text-primary text-[22px]">train</span>
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-on-surface">
-                        Tokaido Shinkansen (Tokyo ⇄ Kyoto)
+                        Vande Bharat Express (New Delhi ⇄ Jaipur)
                       </span>
                       <span className="text-[11px] text-on-surface-variant">
                         Operating on schedule · 3 min platform transfer
@@ -1021,10 +1021,10 @@ export function StitchHomeLauncher({
                     <span className="material-symbols-outlined text-secondary text-[22px]">foggy</span>
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-on-surface">
-                        Cortina d&apos;Ampezzo Cable Car
+                        Khardung La High-Pass Corridor
                       </span>
                       <span className="text-[11px] text-on-surface-variant">
-                        High alpine fog predicted 14:00 · Morning ascent advised
+                        Mountain wind advisory 14:00 · Morning crossing advised
                       </span>
                     </div>
                   </div>
@@ -1038,10 +1038,10 @@ export function StitchHomeLauncher({
                     <span className="material-symbols-outlined text-tertiary text-[22px]">currency_exchange</span>
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-on-surface">
-                        JPY / USD Favorable Window
+                        INR Multi-Currency Parity Shield
                       </span>
                       <span className="text-[11px] text-on-surface-variant">
-                        Rate +1.8% vs 30-day baseline · Favorable for advance rail bookings
+                        RBI Ref Rate locked · Favorable for advance heritage hotel bookings
                       </span>
                     </div>
                   </div>
@@ -1087,7 +1087,7 @@ export function StitchHomeLauncher({
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-inverse-surface/85 via-transparent to-transparent" />
                 <div className="relative z-10 flex items-center justify-between w-full p-2.5 rounded-xl bg-black/50 backdrop-blur-xl border border-white/20 text-white shadow-md">
-                  <span className="text-xs font-semibold">Kyoto Historic District Grid</span>
+                  <span className="text-xs font-semibold">Jaipur Pink City Heritage Grid</span>
                   <span className="text-[10px] font-bold bg-primary px-2.5 py-0.5 rounded-full text-on-primary">
                     100% Geocoded
                   </span>

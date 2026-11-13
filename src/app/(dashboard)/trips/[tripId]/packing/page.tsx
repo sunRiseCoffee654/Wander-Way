@@ -40,6 +40,16 @@ export default async function TripPackingPage(props: {
     }
   }
 
+  if (!trip && tripId.startsWith("mock-")) {
+    trip = {
+      id: tripId,
+      title: "Royal Rajasthan Heritage & Cultural Circuit",
+      destination: "Jaipur, Rajasthan",
+      start_date: "2026-11-11",
+      end_date: "2026-11-16",
+    };
+  }
+
   // If trip not found in DB, return 404
   if (!trip) {
     notFound();

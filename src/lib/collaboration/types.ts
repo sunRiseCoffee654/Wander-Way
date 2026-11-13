@@ -24,8 +24,12 @@ export interface TripInvitation {
   role: 'editor' | 'viewer';
   status: 'pending' | 'accepted' | 'declined' | 'revoked';
   invited_email?: string | null;
+  personal_message?: string | null;
   expires_at: string;
   created_at: string;
+  inviter_name?: string | null;
+  trip_title?: string | null;
+  destination?: string | null;
 }
 
 export type MessageType = 'text' | 'system' | 'proposal' | 'call_event' | 'image';

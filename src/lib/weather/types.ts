@@ -17,6 +17,9 @@ export interface DailyForecast {
   condition_text: string;
   condition_icon: string;
   rain_risk: RainRisk;
+  humidity_percent?: number;
+  wind_speed_kmh?: number;
+  uv_index?: number;
 }
 
 export interface DestinationWeatherForecast {
@@ -38,4 +41,26 @@ export interface DestinationWeatherForecast {
   warnings: WeatherWarning[];
   source: string;
   fetched_at: string;
+}
+
+export interface WeatherGearTip {
+  id: string;
+  icon: string;
+  label: string;
+  note: string;
+  category: "clothing" | "gear" | "wellness";
+  suggestedItemName: string;
+  packingCategory: string;
+}
+
+export interface WeatherPreparationAdvice {
+  comfortIndex: "Optimal" | "Variable" | "Challenging";
+  comfortTone: "success" | "warning" | "alert";
+  headline: string;
+  summary: string;
+  maxTempC: number;
+  minTempC: number;
+  rainDaysCount: number;
+  gearTips: WeatherGearTip[];
+  travelDateMatch: boolean;
 }

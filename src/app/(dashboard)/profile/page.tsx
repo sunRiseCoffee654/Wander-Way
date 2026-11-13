@@ -16,7 +16,7 @@ export default async function ProfilePage() {
 
   return (
     <ProfileSettings
-      userEmail={user?.email || "elena.rostova@wanderway.app"}
+      userEmail={user?.email || "aarav.sharma@wanderway.in"}
       userId={user?.id || "demo-traveler"}
     />
   );

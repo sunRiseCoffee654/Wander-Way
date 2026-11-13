@@ -41,6 +41,14 @@ export default async function TripVaultPage(props: {
     }
   }
 
+  if (!trip && tripId.startsWith("mock-")) {
+    trip = {
+      id: tripId,
+      title: "Royal Rajasthan Heritage & Cultural Circuit",
+      destination: "Jaipur, Rajasthan",
+    };
+  }
+
   // If trip not found in DB, return 404
   if (!trip) {
     notFound();

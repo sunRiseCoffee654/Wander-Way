@@ -2,6 +2,10 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { StitchBudgetView } from "@/components/budget/stitch-budget-view";
+import {
+  getMockRajasthanBudgetLineItems,
+  getMockRajasthanTripBudget,
+} from "@/lib/budget/showcase-budget";
 
 export const metadata: Metadata = {
   title: "Budget Intelligence — WanderWay",
@@ -39,6 +43,11 @@ export default async function TripBudgetPage(props: {
         .order("created_at", { ascending: true });
       lineItems = itemsData;
     }
+  }
+
+  if (!trip && tripId.startsWith("mock-")) {
+    trip = getMockRajasthanTripBudget(tripId);
+    lineItems = getMockRajasthanBudgetLineItems(tripId);
   }
 
   // If trip not found in DB, return 404

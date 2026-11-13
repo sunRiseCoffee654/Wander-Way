@@ -4,6 +4,8 @@ import {
   calculateRainRisk,
   resolveCoordinates,
   getFallbackWeather,
+  celsiusToFahrenheit,
+  getWeatherPreparationAdvice,
 } from "@/lib/weather/service";
 
 describe("Meteorological Weather Service", () => {
@@ -53,4 +55,29 @@ describe("Meteorological Weather Service", () => {
     expect(fallback.warnings.length).toBeGreaterThanOrEqual(1);
     expect(fallback.rain_risk).toBe("moderate");
   });
+
+  it("converts Celsius to Fahrenheit accurately", () => {
+    expect(celsiusToFahrenheit(0)).toBe(32);
+    expect(celsiusToFahrenheit(20)).toBe(68);
+    expect(celsiusToFahrenheit(30)).toBe(86);
+    expect(celsiusToFahrenheit(-10)).toBe(14);
+  });
+
+  it("generates actionable weather preparation advice based on precipitation and temperature", () => {
+    const fallback = getFallbackWeather("Kyoto, Japan");
+    const advice = getWeatherPreparationAdvice(fallback);
+
+    expect(advice.gearTips.length).toBeGreaterThanOrEqual(2);
+    expect(advice.headline).toBeTruthy();
+    expect(advice.summary).toBeTruthy();
+    expect(advice.comfortIndex).toMatch(/Optimal|Variable|Challenging/);
+    expect(advice.maxTempC).toBeGreaterThanOrEqual(advice.minTempC);
+
+    // Tests date-scoped filtering
+    const firstDate = fallback.daily[0].date;
+    const secondDate = fallback.daily[1].date;
+    const scopedAdvice = getWeatherPreparationAdvice(fallback, firstDate, secondDate);
+    expect(scopedAdvice.travelDateMatch).toBe(true);
+  });
 });
+

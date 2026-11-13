@@ -3,8 +3,18 @@ import type { Route } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ReadinessGauge } from "@/components/trips/readiness-gauge";
+import { TripWeatherWidget } from "@/components/weather/trip-weather-widget";
+import { SevereWeatherBanner } from "@/components/weather/severe-weather-banner";
+import { TripShareButton } from "@/components/trips/trip-share-button";
 import { formatMinorUnits } from "@/lib/currency/service";
 import type { Database } from "@/lib/types/database";
+import { GlobalTripProgressBar } from "@/components/trips/global-trip-progress-bar";
+import { buildTripReadinessFromWorkspace } from "@/lib/trips/readiness";
+import { getMockRajasthanDays } from "@/lib/itinerary/showcase-days";
+import {
+  getMockRajasthanBudgetLineItems,
+  getMockRajasthanTripBudget,
+} from "@/lib/budget/showcase-budget";
 
 type TripActivity = { id: string; title: string; planned_time?: string | null; place_name?: string | null; duration_minutes?: number | null; is_must_see?: boolean | null };
 type TripDay = { id: string; day_number: number; calendar_date?: string | null; title?: string | null; itinerary_activities?: TripActivity[] };
@@ -29,46 +39,46 @@ export const metadata: Metadata = {
 
 const POPULAR_DESTINATIONS = [
   {
-    name: "Tokyo, Japan",
-    tagline: "Neon corridors, historic shrines & culinary alleys",
-    theme: "Metropolis & Culture",
-    icon: "temple_buddhist",
-    bgClass: "from-rose-500/10 via-amber-500/5 to-transparent",
+    name: "Jaipur, Rajasthan",
+    tagline: "Pink City palaces, Amber Fort, royal havelis & bazaars",
+    theme: "Royal Heritage & Architecture",
+    icon: "castle",
+    bgClass: "from-amber-500/15 via-rose-500/10 to-transparent",
   },
   {
-    name: "Paris, France",
-    tagline: "Iconic museums, Seine river walks & café culture",
-    theme: "Art & Architecture",
-    icon: "museum",
-    bgClass: "from-blue-500/10 via-indigo-500/5 to-transparent",
+    name: "Kerala Backwaters & Munnar",
+    tagline: "Alleppey houseboats, emerald tea estates & coastal spice gardens",
+    theme: "Backwaters & Tropical Nature",
+    icon: "sailing",
+    bgClass: "from-emerald-500/15 via-teal-500/10 to-transparent",
   },
   {
-    name: "Rome, Italy",
-    tagline: "Ancient Colosseum, Vatican treasures & vibrant piazzas",
-    theme: "History & Dining",
-    icon: "account_balance",
-    bgClass: "from-amber-500/10 via-orange-500/5 to-transparent",
+    name: "Varanasi, Uttar Pradesh",
+    tagline: "Sacred Ganga ghats, evening Aarti, silk weaving & spiritual alleys",
+    theme: "Spiritual & Timeless Heritage",
+    icon: "temple_hindu",
+    bgClass: "from-orange-500/15 via-amber-500/10 to-transparent",
   },
   {
-    name: "Bali, Indonesia",
-    tagline: "Lush rice terraces, coastal sunsets & sacred temples",
-    theme: "Nature & Retreat",
-    icon: "forest",
-    bgClass: "from-emerald-500/10 via-teal-500/5 to-transparent",
+    name: "Ladakh & Leh, Himalayas",
+    tagline: "Pangong Tso azure waters, high mountain passes & ancient monasteries",
+    theme: "Himalayan High Altitude",
+    icon: "landscape",
+    bgClass: "from-cyan-500/15 via-blue-500/10 to-transparent",
   },
   {
-    name: "New York, USA",
-    tagline: "Central Park, Broadway theaters & world-class dining",
-    theme: "Urban & Skyline",
-    icon: "apartment",
-    bgClass: "from-purple-500/10 via-pink-500/5 to-transparent",
-  },
-  {
-    name: "Barcelona, Spain",
-    tagline: "Gaudí masterpieces, Gothic Quarter & Mediterranean coast",
-    theme: "Coastal & Heritage",
+    name: "Goa (North & South)",
+    tagline: "Golden beaches, Portuguese Latin quarters & serene sunset shacks",
+    theme: "Coastal Leisure & Culture",
     icon: "beach_access",
-    bgClass: "from-sky-500/10 via-cyan-500/5 to-transparent",
+    bgClass: "from-sky-500/15 via-teal-500/10 to-transparent",
+  },
+  {
+    name: "Hampi, Karnataka",
+    tagline: "UNESCO Vijayanagara boulder ruins, Virupaksha temple & river coracles",
+    theme: "Archaeology & Ancient Ruins",
+    icon: "account_balance",
+    bgClass: "from-purple-500/15 via-rose-500/10 to-transparent",
   },
 ];
 
@@ -135,8 +145,27 @@ export default async function TripsPage() {
 
   // If no trips exist in the database, show the clean, production-grade onboarding command center
   if (!trips || trips.length === 0) {
+    const previewTripId = "mock-jaipur-current";
+    const previewBudgetCfg = getMockRajasthanTripBudget(previewTripId);
+    const previewReadiness = buildTripReadinessFromWorkspace({
+      days: getMockRajasthanDays(previewTripId),
+      budgetLimitMinorUnits: previewBudgetCfg.budget_minor_units,
+      lineItems: getMockRajasthanBudgetLineItems(previewTripId),
+      documents: [],
+    });
+
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto flex flex-col gap-10 pb-24">
+      <>
+        <GlobalTripProgressBar
+          tripId={previewTripId}
+          tripTitle={previewBudgetCfg.title}
+          destination={previewBudgetCfg.destination}
+          readiness={previewReadiness}
+        />
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto flex flex-col gap-10 pb-24">
+          {/* Real-time Severe Weather Alert System Banner */}
+          <SevereWeatherBanner destination="Jaipur, Rajasthan" tripId="mock-jaipur-current" />
+
         {/* Welcome Empty State Hero */}
         <section className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-primary-fixed/20 via-surface-container to-surface-container-low border border-primary/20 p-8 sm:p-12 shadow-sm">
           <div className="max-w-3xl flex flex-col gap-4">
@@ -165,6 +194,21 @@ export default async function TripsPage() {
                 <span className="material-symbols-outlined text-[18px]">explore</span>
                 <span>Explore Curated Destinations</span>
               </Link>
+              <Link
+                href={"/trips/join" as Route}
+                className="px-5 py-3 rounded-2xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-sm font-semibold flex items-center gap-2 transition-colors border border-surface-container-highest"
+              >
+                <span className="material-symbols-outlined text-[18px]">group_add</span>
+                <span>Join with Code</span>
+              </Link>
+              <TripShareButton
+                tripId="mock-jaipur-current"
+                tripTitle="Royal Rajasthan Heritage Circuit"
+                destination="Jaipur, Rajasthan"
+                variant="outline"
+                label="Share Trip via Email"
+                className="px-5 py-3 rounded-2xl text-sm"
+              />
             </div>
           </div>
         </section>
@@ -222,7 +266,23 @@ export default async function TripsPage() {
             ))}
           </div>
         </section>
+
+        {/* Destination Weather Intelligence Preview */}
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-on-surface tracking-tight">
+                Live Destination Weather Intelligence
+              </h2>
+              <p className="text-xs text-on-surface-variant">
+                5-day meteorological forecast and travel packing preparation preview.
+              </p>
+            </div>
+          </div>
+          <TripWeatherWidget destination="Jaipur, Rajasthan" />
+        </section>
       </div>
+      </>
     );
   }
 
@@ -275,10 +335,27 @@ export default async function TripsPage() {
     0
   );
   const tripLimitMinor = Number(activeTrip.budget_minor_units || 0);
-  const currency = activeTrip.budget_currency || "USD";
+  const currency = activeTrip.budget_currency || "INR";
+
+  const activeReadiness = buildTripReadinessFromWorkspace({
+    days: itineraryDays,
+    budgetLimitMinorUnits: tripLimitMinor,
+    lineItems: budgetLineItems,
+    documents,
+  });
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto flex flex-col gap-8 pb-24">
+    <>
+      <GlobalTripProgressBar
+        tripId={activeTripId}
+        tripTitle={activeTripTitle}
+        destination={activeTrip.destination || undefined}
+        readiness={activeReadiness}
+      />
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto flex flex-col gap-8 pb-24">
+        {/* Real-time Severe Weather Alert System Banner */}
+        <SevereWeatherBanner destination={activeTrip.destination} tripId={activeTripId} />
+
       {/* Immersive Active Trip Hero */}
       <section className="relative w-full rounded-3xl overflow-hidden shadow-sm bg-surface-container-low border border-surface-container-high/60">
         <div className="w-full min-h-[300px] relative flex flex-col justify-between p-6 sm:p-8 bg-gradient-to-r from-primary-fixed/30 via-surface-container-low to-surface-container">
@@ -296,11 +373,18 @@ export default async function TripsPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <TripShareButton
+                tripId={activeTripId}
+                tripTitle={activeTripTitle}
+                destination={activeTrip.destination}
+                variant="primary"
+                label="Share Trip"
+              />
               <Link
                 href={`/trips/${activeTripId}/itinerary` as Route}
-                className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container hover:text-on-primary-container transition-all shadow-xs flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold border border-surface-container-highest transition-all flex items-center gap-1.5"
               >
-                <span className="material-symbols-outlined text-[18px]">route</span>
+                <span className="material-symbols-outlined text-[18px] text-primary">route</span>
                 <span>Open Itinerary</span>
               </Link>
               <Link
@@ -518,6 +602,15 @@ export default async function TripsPage() {
         </div>
       </div>
 
+      {/* 5-Day Weather Forecast & Preparation Widget */}
+      <TripWeatherWidget
+        tripId={activeTripId}
+        tripTitle={activeTripTitle}
+        destination={activeTrip.destination || "Jaipur, Rajasthan"}
+        startDate={activeTrip.start_date}
+        endDate={activeTrip.end_date}
+      />
+
       {/* 4-Card Key Real Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Budget Health Card */}
@@ -685,5 +778,6 @@ export default async function TripsPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

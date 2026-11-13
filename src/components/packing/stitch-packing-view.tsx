@@ -7,8 +7,10 @@ import {
   togglePackingItem,
   addCustomPackingItem,
   deletePackingItem,
+  assignPackingItem,
   type PackingItemRecord,
 } from "@/lib/packing/actions";
+import { TripShareButton } from "@/components/trips/trip-share-button";
 
 interface StitchPackingViewProps {
   tripId: string;
@@ -44,6 +46,7 @@ export function StitchPackingView({
 }: StitchPackingViewProps) {
   const [items, setItems] = useState<PackingItemRecord[]>(initialItems);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -52,16 +55,20 @@ export function StitchPackingView({
   const [newItemCat, setNewItemCat] = useState("weather_climate");
   const [newItemNotes, setNewItemNotes] = useState("");
   const [newItemQty, setNewItemQty] = useState(1);
+  const [newItemAssignee, setNewItemAssignee] = useState("You");
 
   // Stats
   const totalCount = items.length;
   const packedCount = items.filter((i) => i.is_packed).length;
   const packedPct = totalCount > 0 ? Math.round((packedCount / totalCount) * 100) : 0;
 
-  // Filter items
+  // Filter items by category and contributor assignment
   const filteredItems = items.filter((item) => {
-    if (selectedCategory === "all") return true;
-    return item.category === selectedCategory;
+    if (selectedCategory !== "all" && item.category !== selectedCategory) return false;
+    if (assigneeFilter === "mine") return item.assigned_to_name === "You";
+    if (assigneeFilter === "unassigned") return !item.assigned_to_name;
+    if (assigneeFilter !== "all") return item.assigned_to_name === assigneeFilter;
+    return true;
   });
 
   // Toggle item packed status
@@ -88,7 +95,7 @@ export function StitchPackingView({
     }
   };
 
-  // Add custom item
+  // Add custom item with contributor assignment
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
@@ -99,7 +106,9 @@ export function StitchPackingView({
         newItemName.trim(),
         newItemCat,
         newItemNotes.trim() || undefined,
-        newItemQty
+        newItemQty,
+        newItemAssignee.trim() || "You",
+        "You"
       );
       setItems((prev) => [added, ...prev]);
       setIsAddModalOpen(false);
@@ -108,6 +117,18 @@ export function StitchPackingView({
       setNewItemQty(1);
     } catch (e) {
       console.warn("Add item failed:", e);
+    }
+  };
+
+  // Claim or reassign item to traveler
+  const handleClaimItem = async (itemId: string, assignee: string) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === itemId ? { ...it, assigned_to_name: assignee } : it))
+    );
+    try {
+      await assignPackingItem(tripId, itemId, assignee);
+    } catch (e) {
+      console.warn("Assign failed:", e);
     }
   };
 
@@ -266,9 +287,16 @@ export function StitchPackingView({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          <TripShareButton
+            tripId={tripId}
+            tripTitle={tripTitle}
+            destination={destination}
+            variant="secondary"
+            label="Share & Invite"
+          />
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-surface-container text-primary hover:bg-surface-container-high border border-outline-variant/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-surface-container text-primary hover:bg-surface-container-high border border-outline-variant/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
             Add Item
@@ -276,7 +304,7 @@ export function StitchPackingView({
           <button
             onClick={handleAIRefresh}
             disabled={isGenerating}
-            className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-container disabled:opacity-50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+            className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-container disabled:opacity-50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
           >
             <span className={`material-symbols-outlined text-[16px] ${isGenerating ? "animate-spin" : ""}`}>
               {isGenerating ? "progress_activity" : "auto_awesome"}
@@ -284,6 +312,47 @@ export function StitchPackingView({
             {isGenerating ? "Analyzing Climate..." : "AI Re-analyze"}
           </button>
         </div>
+      </div>
+
+      {/* Traveler Contributor Filter Strip */}
+      <div className="flex items-center gap-2 overflow-x-auto text-xs pb-1 bg-surface-container-low/50 p-2.5 rounded-2xl border border-outline-variant/20">
+        <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider shrink-0 flex items-center gap-1">
+          <span className="material-symbols-outlined text-[15px] text-primary">group</span>
+          Traveler Filter:
+        </span>
+        <button
+          type="button"
+          onClick={() => setAssigneeFilter("all")}
+          className={`px-3 py-1 rounded-lg transition-colors font-semibold shrink-0 cursor-pointer text-xs ${
+            assigneeFilter === "all"
+              ? "bg-primary text-on-primary shadow-2xs"
+              : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+          }`}
+        >
+          All Items ({items.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setAssigneeFilter("mine")}
+          className={`px-3 py-1 rounded-lg transition-colors font-semibold shrink-0 cursor-pointer text-xs ${
+            assigneeFilter === "mine"
+              ? "bg-primary text-on-primary shadow-2xs"
+              : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+          }`}
+        >
+          My Assigned Gear ({items.filter((i) => i.assigned_to_name === "You").length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setAssigneeFilter("unassigned")}
+          className={`px-3 py-1 rounded-lg transition-colors font-semibold shrink-0 cursor-pointer text-xs ${
+            assigneeFilter === "unassigned"
+              ? "bg-primary text-on-primary shadow-2xs"
+              : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+          }`}
+        >
+          Unassigned ({items.filter((i) => !i.assigned_to_name).length})
+        </button>
       </div>
 
       {/* Items Grid */}
@@ -353,11 +422,35 @@ export function StitchPackingView({
                     )}
                   </div>
 
-                  {item.notes && (
+                    {item.notes && (
                     <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">
                       {item.notes}
                     </p>
                   )}
+
+                  {/* Contributor Assignment Badge */}
+                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px]">
+                    {item.assigned_to_name ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary-container/50 text-on-secondary-container font-medium border border-outline-variant/30">
+                        <span className="material-symbols-outlined text-[13px]">person</span>
+                        {item.assigned_to_name === "You" ? "Assigned to You" : `Assigned to ${item.assigned_to_name}`}
+                      </span>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="text-on-surface-variant/70 italic text-[10px]">Unassigned</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleClaimItem(item.id, "You");
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold border border-primary/30 transition-colors cursor-pointer"
+                        >
+                          + Claim Item
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Delete Button */}
@@ -443,6 +536,23 @@ export function StitchPackingView({
                     className="w-full px-3 py-2 text-xs rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface focus:outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant block mb-1">
+                  Assign to Traveler
+                </label>
+                <select
+                  value={newItemAssignee}
+                  onChange={(e) => setNewItemAssignee(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface focus:outline-none"
+                >
+                  <option value="You">You (Trip Organizer)</option>
+                  <option value="Rohan Mehta">Rohan Mehta (Editor)</option>
+                  <option value="Priya Nair">Priya Nair</option>
+                  <option value="Ananya Verma">Ananya Verma</option>
+                  <option value="">Unassigned (Shared Gear)</option>
+                </select>
               </div>
 
               <div>

@@ -92,6 +92,13 @@ export function formatLegBadgeText(
         icon: "train",
         modeTitle: "Shinkansen Bullet Train",
       };
+    case "vande_bharat":
+    case "express_rail":
+      return {
+        label: `${distStr} • ${timeStr}`,
+        icon: "train",
+        modeTitle: "Vande Bharat / Express Rail",
+      };
     case "drive":
     default:
       return {

@@ -6,15 +6,17 @@ import type { Database } from "@/lib/types/database";
 import {
   calculateBudgetTotals,
   normalizePriceEvidence,
+  evaluateBudgetThreshold,
 } from "@/lib/budget/calculations";
 import {
   convertMinorUnitsDeterministic,
   formatMinorUnits,
-  getLiveExchangeRates,
 } from "@/lib/currency/service";
 import type { SupportedCurrency } from "@/lib/currency/types";
 import { ExpenseModal } from "./expense-modal";
 import { DebtSettlementCard } from "./debt-settlement-card";
+import { CategorySpendingChart } from "./category-spending-chart";
+import { BudgetThresholdWarning } from "./budget-threshold-warning";
 import type { ExpenseItemInput } from "@/lib/budget/settlement";
 
 type DbLineItem = Database["public"]["Tables"]["budget_line_items"]["Row"];
@@ -55,21 +57,33 @@ export function StitchBudgetView({
   const [displayCurrency, setDisplayCurrency] = useState<SupportedCurrency>("INR");
   const [ratesMap, setRatesMap] = useState<Record<string, number>>({});
   const [rateSource, setRateSource] = useState<string>("European Central Bank");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const activeMembers = members && members.length > 0 ? members : DEFAULT_MEMBERS;
 
   useEffect(() => {
-    getLiveExchangeRates(budgetCurrency).then((res) => {
-      setRatesMap(res.rates);
-      setRateSource(res.source);
-    });
+    let active = true;
+    fetch(`/api/currency/rates?base=${encodeURIComponent(budgetCurrency)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (active && json?.success && json?.data) {
+          setRatesMap(json.data.rates || {});
+          setRateSource(json.data.source || "WanderWay FX Fallback Matrix");
+        }
+      })
+      .catch(() => {
+        // Fallback rates handled deterministically by convertMinorUnitsDeterministic
+      });
+    return () => {
+      active = false;
+    };
   }, [budgetCurrency]);
 
   const handleExpenseAdded = (newItem: DbLineItem, splitWithUserIds: string[]) => {
     setRecordedExpenses((prev) => [newItem, ...prev]);
     setSharedExpenses((prev) => [
       {
-        paidByUserId: newItem.paid_by_user_id || "user_elena",
+        paidByUserId: newItem.paid_by_user_id || "user_you",
         amountMinor: newItem.amount_minor_units,
         splitWithUserIds,
       },
@@ -145,11 +159,36 @@ export function StitchBudgetView({
     };
   });
 
-  const totals = calculateBudgetTotals(currentItems, budgetLimitMinorUnits, 620000);
+  const chartItems = currentItems.map((item) => ({
+    id: item.id,
+    category: item.category,
+    title: item.title,
+    amount: Number(item.amount_minor_units || 0) / 100,
+    isPaid: item.is_paid,
+  }));
+
+  const filteredLineItems = lineItems.filter((item) => {
+    if (!selectedCategory) return true;
+    const cat = item.sub.toLowerCase();
+    if (selectedCategory === "transport") return cat.includes("transport") || cat.includes("train") || cat.includes("flight") || cat.includes("rail") || cat.includes("taxi");
+    if (selectedCategory === "lodging") return cat.includes("lodging") || cat.includes("hotel") || cat.includes("haveli") || cat.includes("resort") || cat.includes("ryokan") || cat.includes("stay");
+    if (selectedCategory === "activities") return cat.includes("activity") || cat.includes("activities") || cat.includes("tour") || cat.includes("pass") || cat.includes("fort") || cat.includes("palace") || cat.includes("temple");
+    if (selectedCategory === "food") return cat.includes("food") || cat.includes("dining") || cat.includes("restaurant") || cat.includes("meal");
+    if (selectedCategory === "gear") return cat.includes("gear") || cat.includes("misc") || cat.includes("luggage") || cat.includes("wifi");
+    return true;
+  });
+
+  const totals = calculateBudgetTotals(currentItems, budgetLimitMinorUnits, 7500000);
   const totalAllocated = totals.totalAllocatedMajor;
   const tripLimit = totals.tripLimitMajor;
   const remainingRunway = totals.remainingRunwayMajor;
   const velocityPercent = totals.velocityPercent;
+
+  const thresholdStatus = evaluateBudgetThreshold(
+    totals.totalAllocatedMinorUnits,
+    totals.tripLimitMinorUnits,
+    displayCurrency
+  );
 
   const liveQuoteAmount = totals.evidenceBreakdown.live_quote.amountMajor;
   const publishedAmount = totals.evidenceBreakdown.published_price.amountMajor;
@@ -234,6 +273,13 @@ export function StitchBudgetView({
         </div>
       )}
 
+      {/* 80% & 95% Budget Threshold Warning Notification Feature */}
+      <BudgetThresholdWarning
+        totalAllocatedMinorUnits={totals.totalAllocatedMinorUnits}
+        tripLimitMinorUnits={totals.tripLimitMinorUnits}
+        currency={displayCurrency}
+      />
+
       {/* Top Summary & Metric Ribbon */}
       <div className="flex flex-col lg:flex-row gap-6 items-stretch justify-between">
         {/* Primary Budget Stat Hero Card */}
@@ -241,13 +287,24 @@ export function StitchBudgetView({
           <div className="absolute -right-8 -bottom-8 size-44 rounded-full bg-primary-fixed/20 pointer-events-none blur-2xl" />
 
           <div className="flex items-center justify-between z-10">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold uppercase tracking-wider text-primary">
                 Cap &amp; Liquidity
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[11px] font-medium">
                 Trip Limit: {formatCurrency(tripLimit)}
               </span>
+              {thresholdStatus.isCritical95 ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/30 text-[11px] font-black animate-pulse flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">error</span>
+                  <span>95%+ Critical Ceiling</span>
+                </span>
+              ) : thresholdStatus.isWarning80 ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] font-black flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">warning</span>
+                  <span>80% Warning Reached</span>
+                </span>
+              ) : null}
             </div>
             <button
               type="button"
@@ -259,30 +316,44 @@ export function StitchBudgetView({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-6 z-10">
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-on-surface-variant">
                 Allocated Expenditures
               </span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl sm:text-4xl text-on-surface font-semibold tracking-tight">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1">
+                <span className="text-2xl xl:text-[26px] text-on-surface font-semibold tracking-tight whitespace-nowrap">
                   {formatCurrency(totalAllocated)}
                 </span>
-                <span className="text-xs font-semibold text-tertiary">{velocityPercent}%</span>
+                <span className={`text-xs font-semibold shrink-0 ${
+                  thresholdStatus.isCritical95
+                    ? "text-red-600 dark:text-red-400"
+                    : thresholdStatus.isWarning80
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-tertiary"
+                }`}>
+                  {velocityPercent}%
+                </span>
               </div>
               <span className="text-xs text-on-surface-variant mt-0.5">
                 Committed across {lineItems.length} categories
               </span>
             </div>
 
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-on-surface-variant">
                 Unallocated Runway
               </span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl sm:text-4xl text-primary font-semibold tracking-tight">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1">
+                <span className="text-2xl xl:text-[26px] text-primary font-semibold tracking-tight whitespace-nowrap">
                   {formatCurrency(remainingRunway)}
                 </span>
-                <span className="text-[11px] text-primary-container px-2 py-0.5 rounded-full bg-primary-fixed font-bold">
+                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold shrink-0 whitespace-nowrap ${
+                  thresholdStatus.isCritical95
+                    ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                    : thresholdStatus.isWarning80
+                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                    : "bg-primary-fixed text-primary-container"
+                }`}>
                   {Math.max(0, 100 - Math.round(velocityPercent))}% Buffer
                 </span>
               </div>
@@ -294,22 +365,60 @@ export function StitchBudgetView({
             <div className="flex flex-col justify-center">
               <div className="flex justify-between items-center mb-1.5 text-xs">
                 <span className="text-on-surface-variant">Utilization Velocity</span>
-                <span className="text-on-surface font-semibold">{velocityPercent}%</span>
+                <span className={`font-semibold ${
+                  thresholdStatus.isCritical95
+                    ? "text-red-600 dark:text-red-400"
+                    : thresholdStatus.isWarning80
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-on-surface"
+                }`}>
+                  {velocityPercent}%
+                </span>
               </div>
-              <div className="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden flex">
+              <div className="relative w-full bg-surface-container-highest h-3.5 rounded-full overflow-hidden flex">
                 <div
-                  className="bg-primary h-full rounded-l-full transition-all duration-500"
-                  style={{ width: `${velocityPercent}%` }}
+                  className={`h-full rounded-l-full transition-all duration-500 ${
+                    thresholdStatus.isCritical95
+                      ? "bg-red-600"
+                      : thresholdStatus.isWarning80
+                      ? "bg-amber-500"
+                      : "bg-primary"
+                  }`}
+                  style={{ width: `${Math.min(100, velocityPercent)}%` }}
                 />
                 <div
-                  className="bg-tertiary-fixed-dim h-full"
+                  className="bg-tertiary-fixed-dim/30 h-full"
                   style={{ width: `${Math.max(0, 100 - velocityPercent)}%` }}
                 />
+                {/* 80% Warning Marker */}
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-10 shadow-xs"
+                  style={{ left: "80%" }}
+                  title="80% Warning Threshold"
+                />
+                {/* 95% Critical Marker */}
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 shadow-xs"
+                  style={{ left: "95%" }}
+                  title="95% Critical Threshold"
+                />
               </div>
-              <div className="flex items-center justify-between text-on-surface-variant text-[11px] mt-2">
+              <div className="flex items-center justify-between text-on-surface-variant text-[11px] mt-2 font-medium">
                 <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-primary" />
+                  <span className={`size-2 rounded-full ${
+                    thresholdStatus.isCritical95
+                      ? "bg-red-600"
+                      : thresholdStatus.isWarning80
+                      ? "bg-amber-500"
+                      : "bg-primary"
+                  }`} />
                   Booked &amp; Est.
+                </span>
+                <span className="text-[10px] font-mono text-amber-700 dark:text-amber-400 font-bold">
+                  80% Warning
+                </span>
+                <span className="text-[10px] font-mono text-red-700 dark:text-red-400 font-bold">
+                  95% Critical
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="size-2 rounded-full bg-tertiary-fixed-dim" />
@@ -385,17 +494,17 @@ export function StitchBudgetView({
               </div>
               <div className="flex items-baseline justify-between mt-1">
                 <span className="text-base font-bold text-on-surface">
-                  1 USD = 148.20 JPY
+                  1 USD = 84.50 INR
                 </span>
                 <span className="text-xs text-tertiary font-semibold">
-                  +0.42% 24h
+                  +0.18% 24h
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 text-[11px]">
                 <span className="text-on-surface-variant">
-                  Retrieved Oct 14, 08:00 UTC
+                  Retrieved Today, 08:00 IST
                 </span>
-                <span className="text-secondary font-medium">Auto-pegged</span>
+                <span className="text-secondary font-medium">RBI Ref Rate</span>
               </div>
             </div>
           </div>
@@ -498,7 +607,7 @@ export function StitchBudgetView({
               {formatCurrency(publishedAmount)}
             </span>
             <span className="text-[11px] text-on-surface-variant truncate">
-              Official JR rail tariffs &amp; museum admissions
+              Official IRCTC rail tariffs &amp; ASI monument admissions
             </span>
           </div>
 
@@ -557,6 +666,14 @@ export function StitchBudgetView({
           </div>
         </div>
       </div>
+
+      {/* D3 Spending by Category Visualization */}
+      <CategorySpendingChart
+        items={chartItems}
+        formatCurrency={formatCurrency}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
 
       {/* Main Workspace Split: Breakdown Table & Intelligence Explanation */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -638,8 +755,23 @@ export function StitchBudgetView({
                         </div>
                       </td>
                     </tr>
+                  ) : filteredLineItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-10 px-6 text-center">
+                        <p className="text-xs font-semibold text-on-surface">
+                          No items match the selected category &quot;{selectedCategory}&quot;
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategory(null)}
+                          className="mt-2 text-xs font-bold text-primary hover:underline cursor-pointer"
+                        >
+                          View all categories
+                        </button>
+                      </td>
+                    </tr>
                   ) : (
-                    lineItems.map((item) => (
+                    filteredLineItems.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-surface-container-high/40 transition-colors"
@@ -744,10 +876,10 @@ export function StitchBudgetView({
                 </div>
                 <div className="text-xs text-on-surface-variant">
                   <p className="font-mono text-primary text-xs py-1.5 bg-surface-container-lowest px-2.5 rounded-lg mt-1">
-                    E_food = Days (9) × Allowance ($40) × Pax (2) = $720.00
+                    E_food = Days (6) × Allowance (₹2,500) × Pax (2) = ₹30,000.00
                   </p>
                   <p className="mt-2 text-[11px] leading-relaxed">
-                    Based on Japan National Tourism Organization (JNTO) mid-tier median meal index for Kyoto/Tokyo dining.
+                    Based on Ministry of Tourism India mid-tier median meal index for Jaipur &amp; Udaipur dining.
                   </p>
                 </div>
               </div>
@@ -763,10 +895,10 @@ export function StitchBudgetView({
                 </div>
                 <div className="text-xs text-on-surface-variant">
                   <p className="font-mono text-primary text-xs py-1.5 bg-surface-container-lowest px-2.5 rounded-lg mt-1">
-                    Buffer = Total Estimated JPY × +1.8% hedge
+                    Buffer = Non-INR Quotes × +1.5% hedge
                   </p>
                   <p className="mt-2 text-[11px] leading-relaxed">
-                    Protects against intra-week Yen volatility before card settlement clearing dates.
+                    Protects against cross-currency settlement conversion fluctuations on international cards.
                   </p>
                 </div>
               </div>

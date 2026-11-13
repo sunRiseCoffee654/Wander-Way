@@ -37,7 +37,7 @@ export async function recordExpenseAction(
       return { success: false, error: "Invalid amount" };
     }
 
-    const tripId = input.tripId || "kyoto-autumn-2025";
+    const tripId = input.tripId || "mock-jaipur-current";
     const isShowcase =
       tripId === "kyoto-autumn-2025" ||
       tripId === "default" ||
@@ -85,7 +85,7 @@ export async function recordExpenseAction(
       currency: input.currency || "INR",
       category: input.category || "General",
       evidence_type: normalizePriceEvidence(input.evidenceTier),
-      paid_by_user_id: input.paidByUserId || (user?.id ?? "user_elena"),
+      paid_by_user_id: input.paidByUserId || (user?.id ?? "user_aarav"),
       is_paid: input.isPaid ?? true,
       source_name: input.sourceName || "Direct Expense",
       source_url: input.sourceUrl || null,

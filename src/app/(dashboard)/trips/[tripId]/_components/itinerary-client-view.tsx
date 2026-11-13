@@ -3,7 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import type { Route } from "next";
+import { AnimatePresence, motion } from "motion/react";
 import type { Database } from "@/lib/types/database";
+import { useReducedMotion } from "@/lib/motion/use-reduced-motion";
+import {
+  getDayListContainerVariants,
+  getDayListItemVariants,
+  resolveDaySwitchDirection,
+  type DaySwitchDirection,
+} from "@/lib/itinerary/motion-variants";
 import {
   getItineraryEvidenceBadge,
   formatTransitDuration,
@@ -20,6 +28,7 @@ import { cacheItineraryOffline } from "@/lib/offline/storage";
 import { useOfflineStatus } from "@/lib/offline/use-offline";
 import type { WaypointItem, TransitLegItem } from "@/lib/itinerary/transit-geometry";
 import { ActivityEditModal } from "@/components/itinerary/activity-edit-modal";
+import { TripShareButton } from "@/components/trips/trip-share-button";
 import {
   createActivityAction,
   updateActivityAction,
@@ -66,6 +75,7 @@ export function ItineraryClientView({
 
   const [customDays, setCustomDays] = useState<ItineraryDayWithActivities[]>(initialDays);
   const [selectedDay, setSelectedDay] = useState<number>(initialDays[0]?.day_number || 1);
+  const [dayDirection, setDayDirection] = useState<DaySwitchDirection>(1);
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
   const [offlineSaved, setOfflineSaved] = useState(true);
   const [exportNotice, setExportNotice] = useState(false);
@@ -78,6 +88,23 @@ export function ItineraryClientView({
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { isOffline } = useOfflineStatus(tripId);
+  const reducedMotion = useReducedMotion();
+
+  const containerVariants = useMemo(
+    () => getDayListContainerVariants(reducedMotion),
+    [reducedMotion],
+  );
+  const itemVariants = useMemo(
+    () => getDayListItemVariants(reducedMotion, dayDirection),
+    [reducedMotion, dayDirection],
+  );
+
+  const handleSelectDay = (nextDay: number) => {
+    if (nextDay === selectedDay) return;
+    setDayDirection(resolveDaySwitchDirection(selectedDay, nextDay));
+    setSelectedDay(nextDay);
+    setActiveActivityId(null);
+  };
 
   // Sync customDays when dbDays changes during render without setState in effect
   const [prevDbDays, setPrevDbDays] = useState(dbDays);
@@ -365,6 +392,15 @@ export function ItineraryClientView({
               <span>Packing List</span>
             </Link>
 
+            <TripShareButton
+              tripId={tripId}
+              tripTitle={tripTitle}
+              destination={destination}
+              variant="primary"
+              label="Share & Invite"
+              className="rounded-full shadow-2xs"
+            />
+
             <button
               type="button"
               onClick={() => setGroupTalkOpen(true)}
@@ -406,11 +442,13 @@ export function ItineraryClientView({
           {daysList.map((d) => {
             const isSelected = selectedDay === d.dayNumber;
             return (
-              <button
+              <motion.button
                 key={d.dayNumber}
                 type="button"
-                onClick={() => setSelectedDay(d.dayNumber)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all shrink-0 text-xs cursor-pointer ${
+                aria-pressed={isSelected}
+                whileTap={reducedMotion ? undefined : { scale: 0.97 }}
+                onClick={() => handleSelectDay(d.dayNumber)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors shrink-0 text-xs cursor-pointer ${
                   isSelected
                     ? "bg-primary text-on-primary font-bold shadow-xs"
                     : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-medium"
@@ -432,7 +470,7 @@ export function ItineraryClientView({
                   </span>
                   {d.weather}
                 </span>
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -467,211 +505,231 @@ export function ItineraryClientView({
             </div>
           </div>
 
-          {/* Day Activities List or Clean Empty State */}
-          {currentDbActivities.length === 0 ? (
-            <div className="p-8 sm:p-12 rounded-3xl bg-surface-container-lowest border border-surface-container-high/40 text-center flex flex-col items-center justify-center gap-4">
-              <div className="size-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <span className="material-symbols-outlined text-[30px]">event_note</span>
-              </div>
-              <div className="max-w-md space-y-1">
-                <h3 className="text-base font-semibold text-on-surface">
-                  No activities scheduled for Day {selectedDay}
-                </h3>
-                <p className="text-xs text-on-surface-variant">
-                  Add your first landmark, museum, restaurant, or sightseeing stop for {destination}.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleOpenAddModal}
-                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                <span>+ Add First Activity</span>
-              </button>
-            </div>
-          ) : (
-            currentDbActivities.map((act, idx) => {
-              const evidenceInfo = getEvidenceBadge(act.booking_requirement ? "published_price" : "calculated_estimate");
-              return (
-                <div
-                  key={act.id}
-                  id={resolveSelectedWaypointCardId(act.id)}
-                  onClick={() => setActiveActivityId(act.id)}
-                  className="flex flex-col gap-3 cursor-pointer"
+          {/* Day Activities List or Clean Empty State (Staggered Motion on Day Switch) */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`day-panel-${selectedDay}`}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="flex flex-col gap-4"
+              data-testid="itinerary-day-list"
+              data-active-day={selectedDay}
+            >
+              {currentDbActivities.length === 0 ? (
+                <motion.div
+                  key={`empty-day-${selectedDay}`}
+                  variants={itemVariants}
+                  className="p-8 sm:p-12 rounded-3xl bg-surface-container-lowest border border-surface-container-high/40 text-center flex flex-col items-center justify-center gap-4"
                 >
-                  <div
-                    className={`relative bg-surface-container-lowest rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all border ${
-                      activeActivityId === act.id
-                        ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
-                        : "border-surface-container-high/40"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3.5">
-                        <div className="flex flex-col items-center">
-                          <span className="size-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-bold shadow-xs">
-                            {idx + 1}
-                          </span>
-                          <span className="text-[11px] text-on-surface-variant mt-1.5 font-semibold">
-                            {act.planned_time ? act.planned_time.slice(0, 5) : "Daytime"}
-                          </span>
-                        </div>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-base text-on-surface font-semibold">
-                              {act.title}
-                            </h3>
-                            {act.is_user_edited && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
-                                <span className="material-symbols-outlined text-[12px]">edit_note</span>
-                                User Edited
-                              </span>
-                            )}
-                            {act.is_must_see && (
-                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
-                                <span className="material-symbols-outlined text-[14px]">star</span>
-                                Must See
-                              </div>
-                            )}
-                            <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-medium">
-                              {act.place_category || "Sightseeing"}
-                            </span>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${evidenceInfo.badge}`}>
-                              <span className="material-symbols-outlined text-[12px]">{evidenceInfo.icon}</span>
-                              {evidenceInfo.label}
-                            </span>
-                          </div>
-
-                          {act.description && (
-                            <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
-                              {act.description}
-                            </p>
-                          )}
-
-                          {act.place_name && (
-                            <div className="text-[11px] text-on-surface-variant flex items-center gap-1 pt-0.5">
-                              <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
-                              <span>{act.place_name}</span>
-                              {act.latitude && act.longitude && (
-                                <span className="text-outline">
-                                  • {act.latitude.toFixed(4)}°, {act.longitude.toFixed(4)}°
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-4 pt-1 text-xs text-on-surface-variant">
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px] text-primary">
-                                schedule
-                              </span>
-                              Duration: {act.duration_minutes}m
-                            </span>
-                            {act.booking_requirement && (
-                              <span className="flex items-center gap-1 text-secondary font-medium">
-                                <span className="material-symbols-outlined text-[16px]">
-                                  confirmation_number
-                                </span>
-                                {act.booking_requirement}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMoveActivity(idx, "up");
-                          }}
-                          disabled={idx === 0}
-                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
-                          title="Move Up"
-                          aria-label="Move Up"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMoveActivity(idx, "down");
-                          }}
-                          disabled={idx === currentDbActivities.length - 1}
-                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
-                          title="Move Down"
-                          aria-label="Move Down"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditModalForDb(act);
-                          }}
-                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors cursor-pointer"
-                          title="Edit Activity"
-                          aria-label="Edit Activity"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">edit</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteActivity(act.id, act.title);
-                          }}
-                          className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer"
-                          title="Delete Activity"
-                          aria-label="Delete Activity"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
+                  <div className="size-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[30px]">event_note</span>
                   </div>
+                  <div className="max-w-md space-y-1">
+                    <h3 className="text-base font-semibold text-on-surface">
+                      No activities scheduled for Day {selectedDay}
+                    </h3>
+                    <p className="text-xs text-on-surface-variant">
+                      Add your first landmark, museum, restaurant, or sightseeing stop for {destination}.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddModal}
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                    <span>+ Add First Activity</span>
+                  </button>
+                </motion.div>
+              ) : (
+                currentDbActivities.map((act, idx) => {
+                  const evidenceInfo = getEvidenceBadge(act.booking_requirement ? "published_price" : "calculated_estimate");
+                  return (
+                    <motion.div
+                      key={act.id}
+                      variants={itemVariants}
+                      layout="position"
+                      id={resolveSelectedWaypointCardId(act.id)}
+                      onClick={() => setActiveActivityId(act.id)}
+                      className="flex flex-col gap-3 cursor-pointer"
+                      data-testid="itinerary-activity-item"
+                    >
+                      <div
+                        className={`relative bg-surface-container-lowest rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all border ${
+                          activeActivityId === act.id
+                            ? "ring-2 ring-primary bg-primary-fixed/20 border-primary shadow-md"
+                            : "border-surface-container-high/40"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            <div className="flex flex-col items-center">
+                              <span className="size-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-bold shadow-xs">
+                                {idx + 1}
+                              </span>
+                              <span className="text-[11px] text-on-surface-variant mt-1.5 font-semibold">
+                                {act.planned_time ? act.planned_time.slice(0, 5) : "Daytime"}
+                              </span>
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-base text-on-surface font-semibold">
+                                  {act.title}
+                                </h3>
+                                {act.is_user_edited && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
+                                    <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                    User Edited
+                                  </span>
+                                )}
+                                {act.is_must_see && (
+                                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">
+                                    <span className="material-symbols-outlined text-[14px]">star</span>
+                                    Must See
+                                  </div>
+                                )}
+                                <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-medium">
+                                  {act.place_category || "Sightseeing"}
+                                </span>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${evidenceInfo.badge}`}>
+                                  <span className="material-symbols-outlined text-[12px]">{evidenceInfo.icon}</span>
+                                  {evidenceInfo.label}
+                                </span>
+                              </div>
 
-                  {/* Transit Leg if travel mode specified */}
-                  {act.travel_mode_to_next && (
-                    <div className="relative pl-6 py-1">
-                      <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2.5 rounded-xl shadow-2xs border border-surface-container-high/30">
-                        <div className="size-7 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
-                          <span className="material-symbols-outlined text-[18px]">
-                            {act.travel_mode_to_next === "transit" ? "train" : act.travel_mode_to_next === "drive" ? "local_taxi" : "directions_walk"}
-                          </span>
-                        </div>
-                        <div className="flex-1 flex flex-wrap items-center justify-between gap-2 text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-on-surface capitalize">
-                              {act.travel_mode_to_next} to Next Stop
-                            </span>
-                            {act.transit_duration_seconds && (
-                              <span className="text-on-surface-variant">
-                                • {formatTransitDuration(act.transit_duration_seconds)}
-                              </span>
-                            )}
-                            {act.transit_distance_meters && (
-                              <span className="text-on-surface-variant">
-                                ({formatTransitDistance(act.transit_distance_meters)})
-                              </span>
-                            )}
+                              {act.description && (
+                                <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                                  {act.description}
+                                </p>
+                              )}
+
+                              {act.place_name && (
+                                <div className="text-[11px] text-on-surface-variant flex items-center gap-1 pt-0.5">
+                                  <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                                  <span>{act.place_name}</span>
+                                  {act.latitude && act.longitude && (
+                                    <span className="text-outline">
+                                      • {act.latitude.toFixed(4)}°, {act.longitude.toFixed(4)}°
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-4 pt-1 text-xs text-on-surface-variant">
+                                <span className="flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[16px] text-primary">
+                                    schedule
+                                  </span>
+                                  Duration: {act.duration_minutes}m
+                                </span>
+                                {act.booking_requirement && (
+                                  <span className="flex items-center gap-1 text-secondary font-medium">
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      confirmation_number
+                                    </span>
+                                    {act.booking_requirement}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-tertiary flex items-center gap-1 font-medium">
-                            <span className="material-symbols-outlined text-[16px]">navigation</span>
-                            Ground Verified
-                          </span>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveActivity(idx, "up");
+                              }}
+                              disabled={idx === 0}
+                              className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
+                              title="Move Up"
+                              aria-label="Move Up"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveActivity(idx, "down");
+                              }}
+                              disabled={idx === currentDbActivities.length - 1}
+                              className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
+                              title="Move Down"
+                              aria-label="Move Down"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditModalForDb(act);
+                              }}
+                              className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors cursor-pointer"
+                              title="Edit Activity"
+                              aria-label="Edit Activity"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteActivity(act.id, act.title);
+                              }}
+                              className="size-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer"
+                              title="Delete Activity"
+                              aria-label="Delete Activity"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
+
+                      {/* Transit Leg if travel mode specified */}
+                      {act.travel_mode_to_next && (
+                        <div className="relative pl-6 py-1">
+                          <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2.5 rounded-xl shadow-2xs border border-surface-container-high/30">
+                            <div className="size-7 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+                              <span className="material-symbols-outlined text-[18px]">
+                                {act.travel_mode_to_next === "transit" ? "train" : act.travel_mode_to_next === "drive" ? "local_taxi" : "directions_walk"}
+                              </span>
+                            </div>
+                            <div className="flex-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-on-surface capitalize">
+                                  {act.travel_mode_to_next} to Next Stop
+                                </span>
+                                {act.transit_duration_seconds && (
+                                  <span className="text-on-surface-variant">
+                                    • {formatTransitDuration(act.transit_duration_seconds)}
+                                  </span>
+                                )}
+                                {act.transit_distance_meters && (
+                                  <span className="text-on-surface-variant">
+                                    ({formatTransitDistance(act.transit_distance_meters)})
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-tertiary flex items-center gap-1 font-medium">
+                                <span className="material-symbols-outlined text-[16px]">navigation</span>
+                                Ground Verified
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })
+              )}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Add Activity Action Button */}
           <button

@@ -108,7 +108,7 @@ export function WhereWhenSection({
               value={destQuery}
               onChange={(e) => handleDestinationInput(e.target.value)}
               onFocus={() => suggestions.length > 0 && setIsOpen(true)}
-              placeholder="e.g. Kyoto, Japan or Florence, Italy"
+              placeholder="e.g. Jaipur, Rajasthan or Munnar, Kerala"
               className="w-full rounded-control border border-control-border bg-surface py-2.5 pr-4 pl-10 text-sm font-medium text-text-primary placeholder:text-text-muted focus:border-focus focus:ring-2 focus:ring-focus/20 shadow-xs"
               autoComplete="off"
             />
@@ -233,7 +233,7 @@ export function WhereWhenSection({
                 type="text"
                 value={data.originLocation}
                 onChange={(e) => onChange({ originLocation: e.target.value })}
-                placeholder="e.g. San Francisco or London"
+                placeholder="e.g. New Delhi or Mumbai"
                 className="mt-1.5 w-full rounded-control border border-control-border bg-surface px-3.5 py-2.5 text-sm text-text-primary focus:border-focus focus:ring-2 focus:ring-focus/20 shadow-xs"
               />
             </div>
@@ -250,7 +250,7 @@ export function WhereWhenSection({
             type="text"
             value={data.title}
             onChange={(e) => onChange({ title: e.target.value })}
-            placeholder={data.destination ? `Trip to ${data.destination}` : "e.g. Autumn in Kyoto"}
+            placeholder={data.destination ? `Trip to ${data.destination}` : "e.g. Royal Rajasthan Heritage"}
             className="mt-1.5 w-full rounded-control border border-control-border bg-surface px-3.5 py-2.5 text-sm text-text-primary focus:border-focus focus:ring-2 focus:ring-focus/20 shadow-xs"
           />
         </div>
